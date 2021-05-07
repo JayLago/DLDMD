@@ -70,7 +70,7 @@ hyp_params['bias_initializer'] = tf.keras.initializers.Zeros
 
 # Encoding/Decoding Layer Parameters
 hyp_params['num_en_layers'] = 2
-hyp_params['num_en_neurons'] = 64
+hyp_params['num_en_neurons'] = 32
 hyp_params['kernel_init_enc'] = tf.keras.initializers.TruncatedNormal(mean=0.0, stddev=0.1)
 hyp_params['kernel_init_dec'] = tf.keras.initializers.TruncatedNormal(mean=0.0, stddev=0.1)
 hyp_params['ae_output_activation'] = tf.keras.activations.linear

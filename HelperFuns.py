@@ -20,7 +20,7 @@ def diagnostic_plot(y_pred, y_true, hyp_params, epoch, save_path, loss_comps, va
     elif hyp_params['experiment'] == 'pendulum':
         plot_2D(y_pred, y_true, hyp_params, epoch, save_path, loss_comps, val_loss)
     elif hyp_params['experiment'] == 'fluid_flow_slow':
-        plot_fluid(y_pred, y_true, hyp_params, epoch, save_path, loss_comps, val_loss)
+        plot_3d(y_pred, y_true, hyp_params, epoch, save_path, loss_comps, val_loss)
     elif hyp_params['experiment'] == 'fluid_flow_full':
         plot_3d(y_pred, y_true, hyp_params, epoch, save_path, loss_comps, val_loss)
     else:
