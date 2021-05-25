@@ -48,6 +48,16 @@ def dyn_sys_fluid(lhs, mu=0.1, omega=1, A=-0.1, lam=10):
     rhs[2] = -lam * (lhs[2] - lhs[0] ** 2 - lhs[1] ** 2)
     return rhs
 
+def dyn_sys_kdv(lhs, a1=0, c=3):
+    """ planar kdv:
+    dx1/dt = x2
+    dx2/dt = a1 + c*x1 - 3*x2^2
+    """
+    rhs = np.zeros(2)
+    rhs[0] = lhs[1]
+    rhs[1] = a1 + c*lhs[0] - 3*lhs[0]**2
+    return rhs
+
 def rk4(lhs, dt, function):
     """
     :param lhs: previous step state.
@@ -93,7 +103,7 @@ def data_maker_discrete(x_lower1, x_upper1, x_lower2, x_upper2, n_ic=1e4, dt=0.0
         ic = 0
         for x1 in range(2):
             for x2 in range(10):
-                data_mat[ic, :, 0] = np.array([xx[x1,x2], yy[x1,x2]], dtype=np.float64)
+                data_mat[ic, :, 0] = np.array([xx[x1, x2], yy[x1, x2]], dtype=np.float64)
                 for jj in range(nsteps):
                     data_mat[ic, :, jj + 1] = rk4(data_mat[ic, :, jj], dt, dyn_sys_discrete)
                 ic += 1
@@ -239,6 +249,28 @@ def data_maker_fluid_flow_full(x1_lower=-1.1, x1_upper=1.1, x2_lower=-1.1, x2_up
 
     return np.transpose(data_mat, [0, 2, 1])
 
+def data_maker_kdv(x_lower1, x_upper1, x_lower2, x_upper2, n_ic=10000, dt=0.01, tf=1.0, seed=None):
+    # Setup
+    np.random.seed(seed=seed)
+    nsteps = int(tf / dt)
+    n_ic = int(n_ic)
+
+    # Generate initial conditions
+    icond1 = np.random.uniform(x_lower1, x_upper1, n_ic)
+    icond2 = np.random.uniform(x_lower2, x_upper2, n_ic)
+
+    # Integrate
+    data_mat = np.zeros((n_ic, 2, nsteps+1), dtype=np.float64)
+    for ii in range(n_ic):
+        data_mat[ii, :, 0] = np.array([icond1[ii], icond2[ii]], dtype=np.float64)
+        for jj in range(nsteps):
+            data_mat[ii, :, jj+1] = rk4(data_mat[ii, :, jj], dt, dyn_sys_kdv)
+            if (data_mat[ii, 0, jj+1] < x_lower1 or data_mat[ii, 1, jj+1] > x_upper1
+                    or data_mat[ii, 1, jj+1] < x_lower2 or data_mat[ii, 1, jj+1] > x_upper2):
+                break
+
+    return np.transpose(data_mat, [0, 2, 1])
+
 
 # ==============================================================================
 # Test program
@@ -246,10 +278,11 @@ def data_maker_fluid_flow_full(x1_lower=-1.1, x1_upper=1.1, x2_lower=-1.1, x2_up
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
-    create_discrete = True
-    create_pendulum = True
-    create_fluid_flow_slow = True
-    create_fluid_flow_full = True
+    create_discrete = False
+    create_pendulum = False
+    create_fluid_flow_slow = False
+    create_fluid_flow_full = False
+    create_kdv = True
 
     if create_discrete:
         # Generate the data
@@ -299,6 +332,18 @@ if __name__ == "__main__":
         ax.set_ylabel("$x_{2}$", fontsize=18)
         ax.set_zlabel("$x_{3}$", fontsize=18)
         plt.title("Fluid Flow dataset", fontsize=20)
+
+    if create_kdv:
+        # Generate the data
+        data = data_maker_kdv(x_lower1=-2, x_upper1=2, x_lower2=-2, x_upper2=2, n_ic=1000, dt=0.01, tf=20)
+        # Visualize
+        plt.figure(2, figsize=(8, 8))
+        for ii in range(data.shape[0]):
+            npts = np.sum(np.abs(data[ii, :, 0]) > 0)
+            plt.plot(data[ii, :npts, 0], data[ii, :npts, 1], 'r-', lw=0.25)
+        plt.xlabel("x1", fontsize=18)
+        plt.ylabel("X2", fontsize=18)
+        plt.title("KdV dataset", fontsize=18)
 
     plt.show()
     print("done")
