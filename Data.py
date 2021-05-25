@@ -58,6 +58,17 @@ def dyn_sys_kdv(lhs, a1=0, c=3):
     rhs[1] = a1 + c*lhs[0] - 3*lhs[0]**2
     return rhs
 
+def dyn_sys_duffing(lhs, alpha=0.1, gamma=0.05, omega=1.1):
+    """ Duffing oscillator:
+    dx/dt = y
+    dy/dt = x - x^3 - gamma*y + alpha*cos(omega*t)
+    """
+    rhs = np.zeros(3)
+    rhs[0] = lhs[1]
+    rhs[1] = lhs[0] - lhs[0]**3 - gamma*lhs[1] + alpha*np.cos(omega*lhs[2])
+    rhs[2] = lhs[2]
+    return rhs
+
 def rk4(lhs, dt, function):
     """
     :param lhs: previous step state.
@@ -254,11 +265,9 @@ def data_maker_kdv(x_lower1, x_upper1, x_lower2, x_upper2, n_ic=10000, dt=0.01, 
     np.random.seed(seed=seed)
     nsteps = int(tf / dt)
     n_ic = int(n_ic)
-
     # Generate initial conditions
     icond1 = np.random.uniform(x_lower1, x_upper1, n_ic)
     icond2 = np.random.uniform(x_lower2, x_upper2, n_ic)
-
     # Integrate
     data_mat = np.zeros((n_ic, 2, nsteps+1), dtype=np.float64)
     for ii in range(n_ic):
@@ -268,9 +277,25 @@ def data_maker_kdv(x_lower1, x_upper1, x_lower2, x_upper2, n_ic=10000, dt=0.01, 
             if (data_mat[ii, 0, jj+1] < x_lower1 or data_mat[ii, 1, jj+1] > x_upper1
                     or data_mat[ii, 1, jj+1] < x_lower2 or data_mat[ii, 1, jj+1] > x_upper2):
                 break
-
     return np.transpose(data_mat, [0, 2, 1])
 
+def data_maker_duffing(x_lower1, x_upper1, x_lower2, x_upper2, n_ic=10000, dt=0.01, tf=1.0, seed=None):
+    # Setup
+    np.random.seed(seed=seed)
+    nsteps = int(tf / dt)
+    n_ic = int(n_ic)
+    # Generate initial conditions
+    icond1 = np.random.uniform(x_lower1, x_upper1, n_ic)
+    icond2 = np.random.uniform(x_lower2, x_upper2, n_ic)
+    # Integrate
+    data_mat = np.zeros((n_ic, 3, nsteps+1), dtype=np.float64)
+    for ii in range(n_ic):
+        data_mat[ii, :2, 0] = np.array([icond1[ii], icond2[ii]], dtype=np.float64)
+        for jj in range(nsteps):
+            data_mat[ii, :, jj+1] = rk4(data_mat[ii, :, jj], dt, dyn_sys_duffing)
+            data_mat[ii, 2, jj+1] = data_mat[ii, 2, jj] + dt
+
+    return np.transpose(data_mat, [0, 2, 1])
 
 # ==============================================================================
 # Test program
@@ -282,7 +307,8 @@ if __name__ == "__main__":
     create_pendulum = False
     create_fluid_flow_slow = False
     create_fluid_flow_full = False
-    create_kdv = True
+    create_kdv = False
+    create_duffing = True
 
     if create_discrete:
         # Generate the data
@@ -344,6 +370,17 @@ if __name__ == "__main__":
         plt.xlabel("x1", fontsize=18)
         plt.ylabel("X2", fontsize=18)
         plt.title("KdV dataset", fontsize=18)
+
+    if create_duffing:
+        # Generate the data
+        data = data_maker_duffing(x_lower1=-1, x_upper1=1, x_lower2=-1, x_upper2=1, n_ic=2, dt=0.05, tf=200)
+        # Visualize
+        plt.figure(2, figsize=(8, 8))
+        plt.plot(data[0, :, 0], data[0, :, 1], 'r-', lw=0.5)
+        plt.plot(data[1, :, 0], data[1, :, 1], 'b-', lw=0.5)
+        plt.xlabel("x1", fontsize=18)
+        plt.ylabel("X2", fontsize=18)
+        plt.title("Duffing oscillator", fontsize=18)
 
     plt.show()
     print("done")
