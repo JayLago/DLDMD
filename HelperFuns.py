@@ -15,13 +15,12 @@ matplotlib.rc('font', **font)
 
 
 def diagnostic_plot(y_pred, y_true, hyp_params, epoch, save_path, loss_comps, val_loss):
-    if hyp_params['experiment'] == 'discrete':
+    if hyp_params['experiment'] == 'discrete' or \
+            hyp_params['experiment'] == 'pendulum' or \
+            hyp_params['experiment'] == 'van_der_pol':
         plot_2D(y_pred, y_true, hyp_params, epoch, save_path, loss_comps, val_loss)
-    elif hyp_params['experiment'] == 'pendulum':
-        plot_2D(y_pred, y_true, hyp_params, epoch, save_path, loss_comps, val_loss)
-    elif hyp_params['experiment'] == 'fluid_flow_slow':
-        plot_3d(y_pred, y_true, hyp_params, epoch, save_path, loss_comps, val_loss)
-    elif hyp_params['experiment'] == 'fluid_flow_full':
+    elif hyp_params['experiment'] == 'fluid_flow_slow' or \
+            hyp_params['experiment'] == 'fluid_flow_full':
         plot_3d(y_pred, y_true, hyp_params, epoch, save_path, loss_comps, val_loss)
     else:
         print("unknown experiment, create new diagnostic plots")
