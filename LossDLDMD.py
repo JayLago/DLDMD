@@ -36,8 +36,7 @@ class LossDLDMD(keras.losses.Loss):
         if self.pretrain:
             # Autoencoder reconstruction
             x_ae = tf.identity(model[1])
-            # self.loss_recon = tf.reduce_mean(MSE(obs, x_ae))
-            self.loss_recon = tf.reduce_sum(MSE(obs, x_ae)) * (1. / self.global_batch_size)
+            self.loss_recon = tf.reduce_mean(MSE(obs, x_ae))
             self.total_loss = self.a1*self.loss_recon
         else:
             y = tf.identity(model[0])
@@ -47,16 +46,13 @@ class LossDLDMD(keras.losses.Loss):
             weights = model[5]
 
             # Autoencoder reconstruction
-            # self.loss_recon = tf.reduce_mean(MSE(obs, x_ae))
-            self.loss_recon = tf.reduce_sum(MSE(obs, x_ae)) * (1. / self.global_batch_size)
+            self.loss_recon = tf.reduce_mean(MSE(obs, x_ae))
 
             # Future state prediction
-            # self.loss_pred = tf.reduce_mean(MSE(obs, x_adv))
-            self.loss_pred = tf.reduce_sum(MSE(obs, x_adv)) * (1. / self.global_batch_size)
+            self.loss_pred = tf.reduce_mean(MSE(obs, x_adv))
 
             # DMD reconstruction in the latent space
-            # self.loss_lin = tf.reduce_mean(MSE(y, y_adv))
-            self.loss_lin = tf.reduce_sum(MSE(y, y_adv)) * (1. / self.global_batch_size)
+            self.loss_lin = tf.reduce_mean(MSE(y, y_adv))
 
             # L-inf penalty
             self.loss_inf = tf.reduce_max(tf.abs(obs[:, 0, :] - x_ae[:, 0, :])) + \
