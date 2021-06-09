@@ -17,7 +17,9 @@ matplotlib.rc('font', **font)
 def diagnostic_plot(y_pred, y_true, hyp_params, epoch, save_path, loss_comps, val_loss):
     if hyp_params['experiment'] == 'discrete' or \
             hyp_params['experiment'] == 'pendulum' or \
-            hyp_params['experiment'] == 'van_der_pol':
+            hyp_params['experiment'] == 'van_der_pol' or \
+            hyp_params['experiment'] == 'duffing' or \
+            hyp_params['experiment'] == 'kdv':
         plot_2D(y_pred, y_true, hyp_params, epoch, save_path, loss_comps, val_loss)
     elif hyp_params['experiment'] == 'fluid_flow_slow' or \
             hyp_params['experiment'] == 'fluid_flow_full':

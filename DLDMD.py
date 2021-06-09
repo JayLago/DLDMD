@@ -1,6 +1,6 @@
 """
-    Created by:
-        Jay Lago
+    Author:
+        Jay Lago, SDSU, 2021
 """
 import tensorflow as tf
 from tensorflow import keras
@@ -127,7 +127,7 @@ class DLDMD(keras.Model):
         y0 = tf.cast(y_m[:, :, 0], dtype=tf.complex128)
         b = tf.linalg.matvec(Phi_inv, y0)
         Psi = tf.TensorArray(tf.complex128, size=self.num_pred_steps)
-        tpred = tf.cast(tf.linspace(0, self.time_final, self.num_pred_steps), dtype=tf.complex128)
+        tpred = tf.cast(tf.linspace(0.0, self.time_final, self.num_pred_steps), dtype=tf.complex128)
         ii = 0
         for tstep in tpred:
             Psi = Psi.write(ii, tf.math.multiply(tf.math.exp(Omega * tstep), b))

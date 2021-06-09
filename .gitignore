@@ -7,9 +7,10 @@ __pycache__/
 .idea/
 
 # File types
+*_data.pkl
 *.png
-*.pkl
-*.h5
+#*.pkl
+#*.h5
 
 # Jupyter Notebook
 .ipynb_checkpoints
@@ -20,7 +21,6 @@ ipython_config.py
 
 # pyenv
 .python-version
-
 
 # PEP 582; used by e.g. github.com/David-OConnor/pyflow
 __pypackages__/
@@ -43,3 +43,6 @@ venv.bak/
 
 # Pyre type checker
 .pyre/
+
+# Mac OS hidden
+.DS_Store

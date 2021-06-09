@@ -1,12 +1,13 @@
 """
-    Created by:
-        Jay Lago - 17 Nov 2020
+    Author:
+        Jay Lago, SDSU, 2021
 """
 import tensorflow as tf
 import pickle
 import datetime as dt
 import os
-
+import sys
+sys.path.insert(0, '../../')
 import DLDMD as dl
 import LossDLDMD as lf
 import Data as dat
@@ -32,7 +33,7 @@ else:
 tf.keras.backend.set_floatx('float64')  # !! Set precision for the entire model here
 print("TensorFlow version: {}".format(tf.__version__))
 print("Eager execution: {}".format(tf.executing_eagerly()))
-print("Num GPUs Available: {}".format(len(GPUS)))
+print("Num GPUs available: {}".format(len(GPUS)))
 print("Training at precision: {}".format(tf.keras.backend.floatx()))
 print("Training on device: {}".format(DEVICE))
 
@@ -58,7 +59,8 @@ hyp_params['num_pred_steps'] = hyp_params['num_time_steps']
 hyp_params['max_epochs'] = 100
 hyp_params['save_every'] = hyp_params['max_epochs'] // NUM_SAVES
 hyp_params['plot_every'] = hyp_params['max_epochs'] // NUM_PLOTS
-hyp_params['pretrain'] = False
+hyp_params['pretrain'] = True
+hyp_params['num_pretrain'] = 10
 
 # Universal network layer parameters (AE & Aux)
 hyp_params['optimizer'] = 'adam'
@@ -76,14 +78,14 @@ hyp_params['kernel_init_dec'] = tf.keras.initializers.TruncatedNormal(mean=0.0, 
 hyp_params['ae_output_activation'] = tf.keras.activations.linear
 
 # Loss Function Parameters
-hyp_params['a1'] = tf.constant(1e-1, dtype=hyp_params['precision'])  # Reconstruction
-hyp_params['a2'] = tf.constant(1, dtype=hyp_params['precision'])  # Prediction
-hyp_params['a3'] = tf.constant(1, dtype=hyp_params['precision'])  # Linearity
-hyp_params['a4'] = tf.constant(1e-9, dtype=hyp_params['precision'])  # L-inf
-hyp_params['a5'] = tf.constant(1e-14, dtype=hyp_params['precision'])  # L-2 on weights
+hyp_params['a1'] = tf.constant(1, dtype=hyp_params['precision'])        # Reconstruction
+hyp_params['a2'] = tf.constant(1, dtype=hyp_params['precision'])        # X prediction
+hyp_params['a3'] = tf.constant(1, dtype=hyp_params['precision'])        # Y prediction
+hyp_params['a4'] = tf.constant(1e-9, dtype=hyp_params['precision'])     # L-inf
+hyp_params['a5'] = tf.constant(1e-14, dtype=hyp_params['precision'])    # L-2 on weights
 
 # Learning rate
-hyp_params['lr'] = 1e-3  # Learning rate
+hyp_params['lr'] = 1e-3
 
 # Initialize the Koopman model and loss
 myMachine = dl.DLDMD(hyp_params)
@@ -109,8 +111,10 @@ else:
 
 # Create training and validation datasets from the initial conditions
 shuffled_data = tf.random.shuffle(data)
-train_data = tf.data.Dataset.from_tensor_slices(shuffled_data[:hyp_params['num_train_init_conds'], :, :])
-val_data = tf.data.Dataset.from_tensor_slices(shuffled_data[-hyp_params['batch_size']:, :, :])
+ntic = hyp_params['num_train_init_conds']
+nvic = hyp_params['num_val_init_conds']
+train_data = tf.data.Dataset.from_tensor_slices(shuffled_data[:ntic, :, :])
+val_data = tf.data.Dataset.from_tensor_slices(shuffled_data[ntic:ntic+nvic, :, :])
 
 # Batch and prefetch the validation data to the GPUs
 val_set = val_data.batch(hyp_params['batch_size'], drop_remainder=True)
