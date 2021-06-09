@@ -11,6 +11,7 @@ __pycache__/
 *.png
 #*.pkl
 #*.h5
+.DS_Store
 
 # Jupyter Notebook
 .ipynb_checkpoints
