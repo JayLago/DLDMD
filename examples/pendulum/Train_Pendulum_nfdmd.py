@@ -8,7 +8,7 @@ import datetime as dt
 import os
 import sys
 sys.path.insert(0, '../../')
-import DLDMD as dl
+import NFDMD as dl
 import LossDLDMD as lf
 import Data as dat
 import Training as tr
@@ -19,7 +19,7 @@ import Training as tr
 # ==============================================================================
 NUM_SAVES = 1       # Number of times to save the model throughout training
 NUM_PLOTS = 20      # Number of diagnostic plots to generate while training
-DEVICE = '/GPU:1'
+DEVICE = '/GPU:0'
 GPUS = tf.config.experimental.list_physical_devices('GPU')
 if GPUS:
     try:
@@ -39,47 +39,38 @@ print("Training on device: {}".format(DEVICE))
 
 
 # ==============================================================================
-# Initialize hyper-parameters and Koopman model
+# Initialize hyper-parameters and model
 # ==============================================================================
 # General parameters
 hyp_params = dict()
 hyp_params['sim_start'] = dt.datetime.now().strftime("%Y-%m-%d-%H%M")
-hyp_params['experiment'] = 'duffing'
+hyp_params['experiment'] = 'pendulum'
 hyp_params['plot_path'] = './training_results/' + hyp_params['experiment'] + '_' + hyp_params['sim_start']
 hyp_params['model_path'] = './trained_models/' + hyp_params['experiment'] + '_' + hyp_params['sim_start']
 hyp_params['device'] = DEVICE
 hyp_params['precision'] = tf.keras.backend.floatx()
-hyp_params['num_init_conds'] = 15000
-hyp_params['num_train_init_conds'] = 10000
-hyp_params['num_val_init_conds'] = 3000
-hyp_params['num_test_init_conds'] = 2000
-hyp_params['time_final'] = 20
-hyp_params['delta_t'] = 0.05
+hyp_params['num_init_conds'] = 10000
+hyp_params['num_train_init_conds'] = 8000
+hyp_params['num_val_init_conds'] = 2000
+hyp_params['time_final'] = 6
+hyp_params['delta_t'] = 0.02
 hyp_params['num_time_steps'] = int(hyp_params['time_final']/hyp_params['delta_t'] + 1)
 hyp_params['num_pred_steps'] = hyp_params['num_time_steps']
-hyp_params['max_epochs'] = 500
+hyp_params['max_epochs'] = 100
 hyp_params['save_every'] = hyp_params['max_epochs'] // NUM_SAVES
 hyp_params['plot_every'] = hyp_params['max_epochs'] // NUM_PLOTS
-hyp_params['pretrain'] = True
-hyp_params['num_pretrain'] = 20
+hyp_params['pretrain'] = False
+hyp_params['num_pretrain'] = -1
 
-# Universal network layer parameters (AE & Aux)
+# Network parameters
 hyp_params['optimizer'] = 'adam'
 hyp_params['batch_size'] = 256
-hyp_params['phys_dim'] = 2
-hyp_params['latent_dim'] = 2
-hyp_params['hidden_activation'] = tf.keras.activations.relu
-hyp_params['bias_initializer'] = tf.keras.initializers.Zeros
-
-# Encoding/Decoding Layer Parameters
-hyp_params['num_en_layers'] = 2
-hyp_params['num_en_neurons'] = 128
-hyp_params['kernel_init_enc'] = tf.keras.initializers.TruncatedNormal(mean=0.0, stddev=0.1)
-hyp_params['kernel_init_dec'] = tf.keras.initializers.TruncatedNormal(mean=0.0, stddev=0.1)
-hyp_params['ae_output_activation'] = tf.keras.activations.linear
+hyp_params['input_dim'] = 2
+hyp_params['hidden_dim'] = 32
+hyp_params['num_coupling_layers'] = 3
 
 # Loss Function Parameters
-hyp_params['a1'] = tf.constant(1e-1, dtype=hyp_params['precision'])     # Reconstruction
+hyp_params['a1'] = tf.constant(1, dtype=hyp_params['precision'])        # Reconstruction
 hyp_params['a2'] = tf.constant(1, dtype=hyp_params['precision'])        # X prediction
 hyp_params['a3'] = tf.constant(1, dtype=hyp_params['precision'])        # Y prediction
 hyp_params['a4'] = tf.constant(1e-9, dtype=hyp_params['precision'])     # L-inf
@@ -89,34 +80,26 @@ hyp_params['a5'] = tf.constant(1e-14, dtype=hyp_params['precision'])    # L-2 on
 hyp_params['lr'] = 1e-3
 
 # Initialize the Koopman model and loss
-myMachine = dl.DLDMD(hyp_params)
+myMachine = dl.NFDMD(hyp_params)
 myLoss = lf.LossDLDMD(hyp_params)
+
 
 # ==============================================================================
 # Generate / load data
 # ==============================================================================
-data_fname = 'duffing_data.pkl'
+data_fname = 'pendulum_data.pkl'
 if os.path.exists(data_fname):
     # Load data from file
     data = pickle.load(open(data_fname, 'rb'))
     data = tf.cast(data, dtype=hyp_params['precision'])
 else:
     # Create new data
-    data = dat.data_maker_duffing(x_lower1=-1, x_upper1=1, x_lower2=-1, x_upper2=1,
-                                  n_ic=hyp_params['num_init_conds'], dt=hyp_params['delta_t'],
-                                  tf=hyp_params['time_final'])
-    data = tf.cast(data[:, :, :2], dtype=hyp_params['precision'])
+    data = dat.data_maker_pendulum(x_lower1=-3.1, x_upper1=3.1, x_lower2=-2, x_upper2=2,
+                                   n_ic=hyp_params['num_init_conds'], dt=hyp_params['delta_t'],
+                                   tf=hyp_params['time_final'])
+    data = tf.cast(data, dtype=hyp_params['precision'])
     # Save data to file
     pickle.dump(data, open(data_fname, 'wb'))
-
-if False:
-    model_path = './trained_models/duffing_2021-06-22-2356/epoch_200_loss_-3.01'
-    model_hyp_params = model_path + '.pkl'
-    model_weights = model_path + '.h5'
-    hyp_params = pickle.load(open(model_hyp_params, 'rb'))
-    myMachine = dl.LKBMachine(hyp_params)
-    myMachine(data[:hyp_params['batch_size'], :, :])
-    myMachine.load_weights(model_weights)
 
 # Create training and validation datasets from the initial conditions
 shuffled_data = tf.random.shuffle(data)
@@ -135,11 +118,6 @@ val_set = val_set.prefetch(tf.data.AUTOTUNE)
 # ==============================================================================
 results = tr.train_model(hyp_params=hyp_params, train_data=train_data,
                          val_set=val_set, model=myMachine, loss=myLoss)
+
 print(results['model'].summary())
-
-
-import matplotlib.pyplot as plt
-plt.figure(123)
-for ii in range(0, data.shape[0], 1000):
-    plt.plot(data[ii, :, 0], data[ii, :, 1])
-plt.show()
+exit()

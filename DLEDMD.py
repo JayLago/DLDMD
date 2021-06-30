@@ -6,10 +6,9 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.layers import *
 
-
-class DLDMD(keras.Model):
+class DLEDMD(keras.Model):
     def __init__(self, hyp_params, **kwargs):
-        super(DLDMD, self).__init__(**kwargs)
+        super(DLEDMD, self).__init__(**kwargs)
 
         # Parameters
         self.phys_dim = hyp_params['phys_dim']
@@ -84,15 +83,15 @@ class DLDMD(keras.Model):
 
         if self.pretrain:
             x_adv, y_adv_real, y_adv_imag = None, None, None
-            Lam, Phi, b = None, None, None
+            k_evals, k_efuns, k_modes = None, None, None
 
         else:
-            # Reshape for DMD step
+            # Transpose for DMD step
             yt = tf.transpose(y, [0, 2, 1])
+            xt = tf.transpose(x, [0, 2, 1])
 
             # Generate latent time series using DMD prediction
-            Phi, Lam, b, y_adv = self.dmd(yt)
-            y_adv = tf.transpose(y_adv, [0, 2, 1])
+            k_efuns, k_evals, k_modes, y_adv = self.edmd(yt, xt)
 
             # Separate Re/Im parts
             y_adv_real = tf.math.real(y_adv)
@@ -104,42 +103,40 @@ class DLDMD(keras.Model):
         # Model weights
         weights = self.trainable_weights
 
-        return [y, x_ae, x_adv, y_adv_real, y_adv_imag, weights, Lam, Phi, b]
+        return [y, x_ae, x_adv, y_adv_real, y_adv_imag, weights, k_evals, k_efuns, k_modes]
 
     # @tf.function
-    def dmd(self, y):
+    def edmd(self, y, x):
         y_m = y[:, :, :-1]
         y_p = y[:, :, 1:]
-        S, U, V = tf.linalg.svd(y_m, compute_uv=True, full_matrices=False)
+
+        # SVD step (w/ optional rank truncation)
+        S, U, V = tf.linalg.svd(y_m, full_matrices=True, compute_uv=True)
         # smax = tf.reduce_max(S)
-        # idx = self.log10(S/smax) > self.dmd_threshold
-        S = tf.linalg.diag(S)
+        # r = self.log10(S/smax) > self.dmd_threshold
         r = S.shape[-1]
-        Si = tf.linalg.pinv(S)
+        Si = tf.linalg.diag(1.0/S)
         U = U[:, :, :r]
         V = V[:, :, :r]
-        Uh = tf.transpose(U, conjugate=True, perm=[0, 2, 1])
-        A = Uh @ (y_p @ (V @ Si))
-        Lam, W = tf.linalg.eig(A)
-        Phi = tf.cast(((y_p @ V) @ Si), dtype=tf.complex128) @ W
-        Phi_inv = self.cpinv(Phi)
-        Omega = tf.math.log(Lam) / self.delta_t
-        y0 = tf.cast(y_m[:, :, 0], dtype=tf.complex128)
-        b = tf.linalg.matvec(Phi_inv, y0)
-        Psi = tf.TensorArray(tf.complex128, size=self.num_pred_steps)
-        tpred = tf.cast(tf.linspace(0.0, self.time_final, self.num_pred_steps), dtype=tf.complex128)
-        ii = 0
-        for tstep in tpred:
-            Psi = Psi.write(ii, tf.math.multiply(tf.math.exp(Omega * tstep), b))
-            ii += 1
-        pred = Phi @ tf.transpose(Psi.stack(), perm=[1, 2, 0])
-        return Phi, Lam, b, pred
+        Uh = tf.linalg.adjoint(U)
 
-    @tf.function
-    def cpinv(self, X):
-        S, U, V = tf.linalg.svd(X, compute_uv=True)
-        Si = tf.cast(tf.linalg.diag(1 / S), dtype=tf.complex128)
-        return V @ Si @ tf.transpose(U, conjugate=True, perm=[0, 2, 1])
+        # Koopman eigenvalues, eigenfunctions, and modes
+        K = y_p @ (V @ (Si @ Uh))
+        k_evals, k_modes = tf.linalg.eig(K)
+        k_evals = tf.math.log(k_evals) / self.delta_t
+        psi = tf.cast(x, dtype=tf.complex128)
+        k_efuns = tf.linalg.solve(k_modes, psi)
+
+        # Prediction step
+        xint = k_efuns[:, :, -1]
+        xint = xint[:, :, tf.newaxis]
+        evals = tf.square(tf.linalg.diag(k_evals))
+        y_pred = tf.TensorArray(tf.complex128, size=self.num_pred_steps)
+        for tt in tf.range(self.num_pred_steps):
+            y_pred = y_pred.write(tt, k_modes @ evals @ xint)
+            evals = tf.math.multiply(evals, evals)
+        y_pred = tf.transpose(tf.squeeze(y_pred.stack()), perm=[1, 0, 2])
+        return k_efuns, k_evals, k_modes, y_pred
 
     @tf.function
     def log10(self, x):
@@ -150,3 +147,16 @@ class DLDMD(keras.Model):
         return {**base_config,
                 'encoder': self.encoder,
                 'decoder': self.decoder}
+
+
+
+
+# import matplotlib.pyplot as plt
+# import numpy as np
+#
+# ee = tf.reshape(k_evals, 256*2)
+#
+# plt.figure(1)
+# plt.plot(np.real(ee), np.imag(ee), '.')
+# plt.plot(np.cos(np.linspace(0, 2*np.pi, 100)), np.sin(np.linspace(0, 2*np.pi, 100)), 'r--')
+# plt.show()

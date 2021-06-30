@@ -69,7 +69,7 @@ def train_model(hyp_params, train_data, val_set, model, loss):
             # Batch validation
             lrecon = tf.keras.metrics.Mean()
             lpred = tf.keras.metrics.Mean()
-            llin = tf.keras.metrics.Mean()
+            ldmd = tf.keras.metrics.Mean()
             linf = tf.keras.metrics.Mean()
             for val_batch in val_set:
                 val_pred = model(val_batch)
@@ -78,10 +78,10 @@ def train_model(hyp_params, train_data, val_set, model, loss):
                 # Save loss components for diagnostic plotting
                 lrecon.update_state(np.log10(loss.loss_recon))
                 lpred.update_state(np.log10(loss.loss_pred))
-                llin.update_state(np.log10(loss.loss_lin))
+                ldmd.update_state(np.log10(loss.loss_dmd))
                 linf.update_state(np.log10(loss.loss_inf))
             train_params['val_loss_comps_avgs'].append([lrecon.result(), lpred.result(),
-                                                        llin.result(), linf.result()])
+                                                        ldmd.result(), linf.result()])
 
         # Report training status
         train_params['train_loss_results'].append(np.log10(epoch_loss_avg_train.result()))

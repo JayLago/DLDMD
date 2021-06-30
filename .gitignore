@@ -9,8 +9,8 @@ __pycache__/
 # File types
 *_data.pkl
 *.png
-#*.pkl
-#*.h5
+*.pkl
+*.h5
 .DS_Store
 
 # Jupyter Notebook

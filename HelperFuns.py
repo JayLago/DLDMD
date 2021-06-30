@@ -109,11 +109,11 @@ def plot_2D(y_pred, y_true, hyp_params, epoch, save_path, loss_comps, val_loss):
     ax[7].set_ylabel("$log_{10}(L_{pred})$")
     ax[7].legend(loc="upper right")
 
-    ax[8].plot(loss_comps[:, 2], color='g', linewidth=lw, label='lin')
-    ax[8].set_title("Linearity")
+    ax[8].plot(loss_comps[:, 2], color='g', linewidth=lw, label='dmd')
+    ax[8].set_title("DMD")
     ax[8].grid()
     ax[8].set_xlabel("Epoch")
-    ax[8].set_ylabel("$log_{10}(L_{lin})$")
+    ax[8].set_ylabel("$log_{10}(L_{dmd})$")
     ax[8].legend(loc="upper right")
 
     fig.suptitle(
@@ -232,11 +232,11 @@ def plot_3d(y_pred, y_true, hyp_params, epoch, save_path, loss_comps, val_loss):
     ax.legend(loc="upper right")
 
     ax = fig.add_subplot(3, 3, 9)
-    ax.plot(loss_comps[:, 2], color='g', linewidth=lw, label='lin')
-    ax.set_title("Linearity")
+    ax.plot(loss_comps[:, 2], color='g', linewidth=lw, label='dmd')
+    ax.set_title("DMD")
     ax.grid()
     ax.set_xlabel("Epoch")
-    ax.set_ylabel("$log_{10}(L_{lin})$")
+    ax.set_ylabel("$log_{10}(L_{dmd})$")
     ax.legend(loc="upper right")
 
     fig.suptitle(
@@ -353,11 +353,11 @@ def plot_fluid(y_pred, y_true, hyp_params, epoch, save_path, loss_comps, val_los
     ax.legend(loc="upper right")
 
     ax = fig.add_subplot(3, 3, 9)
-    ax.plot(loss_comps[:, 2], color='g', linewidth=lw, label='lin')
-    ax.set_title("Linearity")
+    ax.plot(loss_comps[:, 2], color='g', linewidth=lw, label='dmd')
+    ax.set_title("DMD")
     ax.grid()
     ax.set_xlabel("Epoch")
-    ax.set_ylabel("$log_{10}(L_{lin})$")
+    ax.set_ylabel("$log_{10}(L_{dmd})$")
     ax.legend(loc="upper right")
 
     fig.suptitle(
@@ -464,11 +464,11 @@ def plot_vdp(y_pred, y_true, hyp_params, epoch, save_path, loss_comps, val_loss)
     ax.legend(loc="upper right")
 
     ax = fig.add_subplot(3, 3, 9)
-    ax.plot(loss_comps[:, 2], color='g', linewidth=lw, label='lin')
-    ax.set_title("Linearity")
+    ax.plot(loss_comps[:, 2], color='g', linewidth=lw, label='dmd')
+    ax.set_title("DMD")
     ax.grid()
     ax.set_xlabel("Epoch")
-    ax.set_ylabel("$log_{10}(L_{lin})$")
+    ax.set_ylabel("$log_{10}(L_{dmd})$")
     ax.legend(loc="upper right")
 
     fig.suptitle(
@@ -563,11 +563,11 @@ def plot_pendulum_uniform(y_pred, y_true, hyp_params, epoch, save_path, loss_com
     ax[7].set_ylabel("$log_{10}(L_{pred})$")
     ax[7].legend(loc="upper right")
 
-    ax[8].plot(loss_comps[:, 2], color='g', linewidth=lw, label='lin')
-    ax[8].set_title("Linearity")
+    ax[8].plot(loss_comps[:, 2], color='g', linewidth=lw, label='dmd')
+    ax[8].set_title("DMD")
     ax[8].grid()
     ax[8].set_xlabel("Epoch")
-    ax[8].set_ylabel("$log_{10}(L_{lin})$")
+    ax[8].set_ylabel("$log_{10}(L_{dmd})$")
     ax[8].legend(loc="upper right")
 
     fig.suptitle(
