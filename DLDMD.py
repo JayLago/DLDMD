@@ -12,6 +12,7 @@ class DLDMD(keras.Model):
         super(DLDMD, self).__init__(**kwargs)
 
         # Parameters
+        self.batch_size = hyp_params['batch_size']
         self.phys_dim = hyp_params['phys_dim']
         self.latent_dim = hyp_params['latent_dim']
         self.num_time_steps = int(hyp_params['num_time_steps'])
@@ -24,6 +25,7 @@ class DLDMD(keras.Model):
         self.enc_input = (self.num_time_steps, self.phys_dim)
         self.dec_input = (self.num_time_steps, self.latent_dim)
         self.pretrain = hyp_params['pretrain']
+        self.precision = hyp_params['precision']
         self.dmd_threshold = -6
 
         # Construct the ENCODER network
@@ -83,9 +85,12 @@ class DLDMD(keras.Model):
         x_ae = self.decoder(y)
 
         if self.pretrain:
-            x_adv, y_adv_real, y_adv_imag = None, None, None
-            Lam, Phi, b = None, None, None
-
+            x_adv = tf.zeros(shape=x.shape, dtype=self.precision)
+            y_adv_real = tf.zeros(shape=y.shape, dtype=self.precision)
+            y_adv_imag = tf.zeros(shape=y.shape, dtype=self.precision)
+            Lam = tf.zeros(shape=(self.batch_size, self.latent_dim), dtype=tf.complex128)
+            Phi = tf.zeros(shape=(self.batch_size, self.latent_dim, self.latent_dim), dtype=tf.complex128)
+            b = tf.zeros(shape=(self.batch_size, self.latent_dim), dtype=tf.complex128)
         else:
             # Reshape for DMD step
             yt = tf.transpose(y, [0, 2, 1])

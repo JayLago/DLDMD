@@ -20,7 +20,7 @@ import Training as tr
 # ==============================================================================
 NUM_SAVES = 1       # Number of times to save the model throughout training
 NUM_PLOTS = 20      # Number of diagnostic plots to generate while training
-DEVICE = '/GPU:1'
+DEVICE = '/GPU:0'
 GPUS = tf.config.experimental.list_physical_devices('GPU')
 if GPUS:
     try:

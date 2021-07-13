@@ -24,7 +24,7 @@ class LossDLDMD(keras.losses.Loss):
         # Loss components
         self.loss_recon = tf.constant(0.0, dtype=self.precision)
         self.loss_pred = tf.constant(0.0, dtype=self.precision)
-        self.loss_lin = tf.constant(0.0, dtype=self.precision)
+        self.loss_dmd = tf.constant(0.0, dtype=self.precision)
         self.loss_inf = tf.constant(0.0, dtype=self.precision)
         self.loss_reg = tf.constant(0.0, dtype=self.precision)
         self.total_loss = tf.constant(0.0, dtype=self.precision)
@@ -44,15 +44,16 @@ class LossDLDMD(keras.losses.Loss):
             x_adv = tf.identity(model[2])
             y_adv = tf.identity(model[3])
             weights = model[5]
+            pred_horizon = -1
 
             # Autoencoder reconstruction
             self.loss_recon = tf.reduce_mean(MSE(obs, x_ae))
 
             # Future state prediction
-            self.loss_pred = tf.reduce_mean(MSE(obs, x_adv))
+            self.loss_pred = tf.reduce_mean(MSE(obs[:, :pred_horizon, :], x_adv[:, :pred_horizon, :]))
 
             # DMD reconstruction in the latent space
-            self.loss_lin = tf.reduce_mean(MSE(y, y_adv))
+            self.loss_dmd = tf.reduce_mean(MSE(y[:, :pred_horizon, :], y_adv[:, :pred_horizon, :]))
 
             # L-inf penalty
             self.loss_inf = tf.reduce_max(tf.abs(obs[:, 0, :] - x_ae[:, 0, :])) + \
@@ -63,7 +64,7 @@ class LossDLDMD(keras.losses.Loss):
 
             # Total loss
             self.total_loss = self.a1*self.loss_recon + self.a2*self.loss_pred + \
-                              self.a3*self.loss_lin + self.a4*self.loss_inf + \
+                              self.a3*self.loss_dmd + self.a4*self.loss_inf + \
                               self.a5*self.loss_reg
 
         return self.total_loss
@@ -73,7 +74,7 @@ class LossDLDMD(keras.losses.Loss):
         return {**base_config,
                 'loss_recon': self.loss_recon,
                 'loss_pred': self.loss_pred,
-                'loss_lin': self.loss_lin,
+                'loss_dmd': self.loss_dmd,
                 'loss_inf': self.loss_inf,
                 'loss_reg': self.loss_reg,
                 'total_loss': self.total_loss}
