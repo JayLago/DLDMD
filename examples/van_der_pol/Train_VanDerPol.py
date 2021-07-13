@@ -18,9 +18,9 @@ import Training as tr
 # ==============================================================================
 # Setup
 # ==============================================================================
-NUM_SAVES = 5       # Number of times to save the model throughout training
-NUM_PLOTS = 50      # Number of diagnostic plots to generate while training
-DEVICE = '/GPU:0'
+NUM_SAVES = 1       # Number of times to save the model throughout training
+NUM_PLOTS = 20      # Number of diagnostic plots to generate while training
+DEVICE = '/GPU:1'
 GPUS = tf.config.experimental.list_physical_devices('GPU')
 if GPUS:
     try:
@@ -54,7 +54,7 @@ hyp_params['num_init_conds'] = 15000
 hyp_params['num_train_init_conds'] = 10000
 hyp_params['num_val_init_conds'] = 3000
 hyp_params['num_test_init_conds'] = 2000
-hyp_params['time_final'] = 20
+hyp_params['time_final'] = 10
 hyp_params['delta_t'] = 0.02
 hyp_params['mu'] = 1.5
 hyp_params['num_time_steps'] = int(hyp_params['time_final']/hyp_params['delta_t'])
@@ -63,19 +63,19 @@ hyp_params['max_epochs'] = 100
 hyp_params['save_every'] = hyp_params['max_epochs'] // NUM_SAVES
 hyp_params['plot_every'] = hyp_params['max_epochs'] // NUM_PLOTS
 hyp_params['pretrain'] = True
-hyp_params['num_pretrain'] = 10
+hyp_params['num_pretrain'] = 20
 
 # Universal network layer parameters (AE & Aux)
 hyp_params['optimizer'] = 'adam'
 hyp_params['batch_size'] = 256
 hyp_params['phys_dim'] = 2
-hyp_params['latent_dim'] = 2
+hyp_params['latent_dim'] = 8
 hyp_params['hidden_activation'] = tf.keras.activations.relu
 hyp_params['bias_initializer'] = tf.keras.initializers.Zeros
 
 # Encoding/Decoding Layer Parameters
 hyp_params['num_en_layers'] = 2
-hyp_params['num_en_neurons'] = 64
+hyp_params['num_en_neurons'] = 128
 hyp_params['kernel_init_enc'] = tf.keras.initializers.TruncatedNormal(mean=0.0, stddev=0.1)
 hyp_params['kernel_init_dec'] = tf.keras.initializers.TruncatedNormal(mean=0.0, stddev=0.1)
 hyp_params['ae_output_activation'] = tf.keras.activations.linear
@@ -98,7 +98,7 @@ myLoss = lf.LossDLDMD(hyp_params)
 # ==============================================================================
 # Generate / load data
 # ==============================================================================
-data_fname = 'vdp_data.pkl'
+data_fname = 'vdp_data_short.pkl'
 if os.path.exists(data_fname):
     # Load data from file
     data = pickle.load(open(data_fname, 'rb'))

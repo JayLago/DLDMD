@@ -67,7 +67,7 @@ hyp_params['num_pretrain'] = 20
 hyp_params['optimizer'] = 'adam'
 hyp_params['batch_size'] = 256
 hyp_params['phys_dim'] = 2
-hyp_params['latent_dim'] = 2
+hyp_params['latent_dim'] = 3
 hyp_params['hidden_activation'] = tf.keras.activations.relu
 hyp_params['bias_initializer'] = tf.keras.initializers.Zeros
 
