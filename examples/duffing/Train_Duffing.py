@@ -19,7 +19,7 @@ import Training as tr
 # ==============================================================================
 NUM_SAVES = 1       # Number of times to save the model throughout training
 NUM_PLOTS = 20      # Number of diagnostic plots to generate while training
-DEVICE = '/GPU:1'
+DEVICE = '/GPU:0'
 GPUS = tf.config.experimental.list_physical_devices('GPU')
 if GPUS:
     try:
@@ -109,15 +109,6 @@ else:
     # Save data to file
     pickle.dump(data, open(data_fname, 'wb'))
 
-if False:
-    model_path = './trained_models/duffing_2021-06-22-2356/epoch_200_loss_-3.01'
-    model_hyp_params = model_path + '.pkl'
-    model_weights = model_path + '.h5'
-    hyp_params = pickle.load(open(model_hyp_params, 'rb'))
-    myMachine = dl.LKBMachine(hyp_params)
-    myMachine(data[:hyp_params['batch_size'], :, :])
-    myMachine.load_weights(model_weights)
-
 # Create training and validation datasets from the initial conditions
 shuffled_data = tf.random.shuffle(data)
 ntic = hyp_params['num_train_init_conds']
@@ -136,10 +127,4 @@ val_set = val_set.prefetch(tf.data.AUTOTUNE)
 results = tr.train_model(hyp_params=hyp_params, train_data=train_data,
                          val_set=val_set, model=myMachine, loss=myLoss)
 print(results['model'].summary())
-
-
-import matplotlib.pyplot as plt
-plt.figure(123)
-for ii in range(0, data.shape[0], 1000):
-    plt.plot(data[ii, :, 0], data[ii, :, 1])
-plt.show()
+exit()

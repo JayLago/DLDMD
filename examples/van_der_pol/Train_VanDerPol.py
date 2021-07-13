@@ -20,7 +20,7 @@ import Training as tr
 # ==============================================================================
 NUM_SAVES = 1       # Number of times to save the model throughout training
 NUM_PLOTS = 20      # Number of diagnostic plots to generate while training
-DEVICE = '/GPU:1'
+DEVICE = '/GPU:0'
 GPUS = tf.config.experimental.list_physical_devices('GPU')
 if GPUS:
     try:
@@ -98,7 +98,7 @@ myLoss = lf.LossDLDMD(hyp_params)
 # ==============================================================================
 # Generate / load data
 # ==============================================================================
-data_fname = 'vdp_data_short.pkl'
+data_fname = 'vdp_data.pkl'
 if os.path.exists(data_fname):
     # Load data from file
     data = pickle.load(open(data_fname, 'rb'))
@@ -146,66 +146,3 @@ results = tr.train_model(hyp_params=hyp_params, train_data=train_data,
                          val_set=val_set, model=myMachine, loss=myLoss)
 print(results['model'].summary())
 exit()
-
-
-
-
-
-
-
-import matplotlib.pyplot as plt
-plt.figure(1)
-for ii in range(0, data.shape[0], 100):
-    plt.plot(data[ii, :, 0], data[ii, :, 1])
-plt.grid()
-plt.show()
-
-din = []
-for ii in range(data.shape[0]):
-    icd = np.sqrt(data[ii, 0, 0]**2 + data[ii, 0, 1]**2)
-    fpd = np.sqrt(data[ii, -500:, 0]**2 + data[ii, -500:, 1]**2)
-    accept = (fpd - icd) > 0
-    if accept.any():
-        din.append(data[ii, :, :])
-din = np.asarray(din)
-
-plt.figure(2)
-for ii in range(0, din.shape[0], 100):
-    plt.plot(din[ii, :, 0], din[ii, :, 1])
-plt.show()
-
-ii=1000
-plt.plot(data[ii, :200, 0], data[ii, :200, 1], '.')
-plt.plot(data[ii, -1, 0], data[ii, -1, 1], 'bo')
-
-plt.plot(data[ii, :, 0])
-plt.plot(data[ii, :, 1])
-
-
-
-
-data_fname = 'vdp_data_inside.pkl'
-def vdp(t, x):
-    return [x[1], mu * (1 - x[0] ** 2) * x[1] - x[0]]
-mu = hyp_params['mu']
-icx_tmp = np.random.uniform(-2, 2, 60000)
-icy_tmp = np.random.uniform(-2, 2, 60000)
-icx = []
-icy = []
-for ii in range(len(icx_tmp)):
-    icd = np.sqrt(icx_tmp[ii]**2 + icy_tmp[ii]**2)
-    d2o = np.sqrt(0.35**2 + 1.35**2)
-    if icd < d2o:
-        icx.append(icx_tmp[ii])
-        icy.append(icy_tmp[ii])
-icx = np.asarray(icx[:hyp_params['num_init_conds']])
-icy = np.asarray(icy[:hyp_params['num_init_conds']])
-tspan = np.array([0, hyp_params['time_final']])
-dts = np.arange(0, hyp_params['time_final'], hyp_params['delta_t'])
-X = np.zeros(shape=(hyp_params['num_init_conds'], 2, hyp_params['num_time_steps']))
-for ii, ic in enumerate(zip(icx, icy)):
-    tmp = solve_ivp(vdp, t_span=tspan, y0=ic, method='RK45', t_eval=dts)
-    X[ii, :, :] = tmp.y
-data = tf.transpose(X, perm=[0, 2, 1])
-data = tf.cast(data, dtype=hyp_params['precision'])
-pickle.dump(data, open(data_fname, 'wb'))

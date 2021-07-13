@@ -111,7 +111,7 @@ class DLDMD(keras.Model):
 
         return [y, x_ae, x_adv, y_adv_real, y_adv_imag, weights, Lam, Phi, b]
 
-    # @tf.function
+    @tf.function
     def dmd(self, y):
         y_m = y[:, :, :-1]
         y_p = y[:, :, 1:]
