@@ -318,7 +318,7 @@ def data_maker_duffing_driven(x_lower1, x_upper1, x_lower2, x_upper2, n_ic=10000
     for ii in range(n_ic):
         data_mat[ii, :2, 0] = np.array([icond1[ii], icond2[ii]], dtype=np.float64)
         for jj in range(nsteps):
-            data_mat[ii, :, jj+1] = rk4(data_mat[ii, :, jj], dt, dyn_sys_duffing)
+            data_mat[ii, :, jj+1] = rk4(data_mat[ii, :, jj], dt, dyn_sys_duffing_driven)
             data_mat[ii, 2, jj+1] = data_mat[ii, 2, jj] + dt
     return np.transpose(data_mat, [0, 2, 1])
 

@@ -95,16 +95,16 @@ myLoss = lf.LossDLDMD(hyp_params)
 # ==============================================================================
 # Generate / load data
 # ==============================================================================
-data_fname = 'duffing_data.pkl'
+data_fname = 'duffing_data_driven.pkl'
 if os.path.exists(data_fname):
     # Load data from file
     data = pickle.load(open(data_fname, 'rb'))
     data = tf.cast(data, dtype=hyp_params['precision'])
 else:
     # Create new data
-    data = dat.data_maker_duffing(x_lower1=-1, x_upper1=1, x_lower2=-1, x_upper2=1,
-                                  n_ic=hyp_params['num_init_conds'], dt=hyp_params['delta_t'],
-                                  tf=hyp_params['time_final'])
+    data = dat.data_maker_duffing_driven(x_lower1=-1, x_upper1=1, x_lower2=-1, x_upper2=1,
+                                         n_ic=hyp_params['num_init_conds'], dt=hyp_params['delta_t'],
+                                         tf=hyp_params['time_final'])
     data = tf.cast(data[:, :, :2], dtype=hyp_params['precision'])
     # Save data to file
     pickle.dump(data, open(data_fname, 'wb'))

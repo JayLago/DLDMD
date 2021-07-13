@@ -17,8 +17,8 @@ import Training as tr
 # ==============================================================================
 # Setup
 # ==============================================================================
-NUM_SAVES = 1       # Number of times to save the model throughout training
-NUM_PLOTS = 20      # Number of diagnostic plots to generate while training
+NUM_SAVES = 50       # Number of times to save the model throughout training
+NUM_PLOTS = 50      # Number of diagnostic plots to generate while training
 DEVICE = '/GPU:0'
 GPUS = tf.config.experimental.list_physical_devices('GPU')
 if GPUS:
@@ -53,11 +53,11 @@ hyp_params['num_init_conds'] = 15000
 hyp_params['num_train_init_conds'] = 10000
 hyp_params['num_val_init_conds'] = 3000
 hyp_params['num_test_init_conds'] = 2000
-hyp_params['time_final'] = 10
+hyp_params['time_final'] = 20
 hyp_params['delta_t'] = 0.05
 hyp_params['num_time_steps'] = int(hyp_params['time_final']/hyp_params['delta_t'] + 1)
 hyp_params['num_pred_steps'] = hyp_params['num_time_steps']
-hyp_params['max_epochs'] = 100
+hyp_params['max_epochs'] = 500
 hyp_params['save_every'] = hyp_params['max_epochs'] // NUM_SAVES
 hyp_params['plot_every'] = hyp_params['max_epochs'] // NUM_PLOTS
 hyp_params['pretrain'] = True
@@ -79,7 +79,7 @@ hyp_params['kernel_init_dec'] = tf.keras.initializers.TruncatedNormal(mean=0.0, 
 hyp_params['ae_output_activation'] = tf.keras.activations.linear
 
 # Loss Function Parameters
-hyp_params['a1'] = tf.constant(1e-1, dtype=hyp_params['precision'])     # Reconstruction
+hyp_params['a1'] = tf.constant(1, dtype=hyp_params['precision'])     # Reconstruction
 hyp_params['a2'] = tf.constant(1, dtype=hyp_params['precision'])        # X prediction
 hyp_params['a3'] = tf.constant(1, dtype=hyp_params['precision'])        # Y prediction
 hyp_params['a4'] = tf.constant(1e-9, dtype=hyp_params['precision'])     # L-inf
@@ -95,16 +95,16 @@ myLoss = lf.LossDLDMD(hyp_params)
 # ==============================================================================
 # Generate / load data
 # ==============================================================================
-data_fname = 'duffing_data.pkl'
+data_fname = 'duffing_data_bollt.pkl'
 if os.path.exists(data_fname):
     # Load data from file
     data = pickle.load(open(data_fname, 'rb'))
     data = tf.cast(data, dtype=hyp_params['precision'])
 else:
     # Create new data
-    data = dat.data_maker_duffing(x_lower1=-1, x_upper1=1, x_lower2=-1, x_upper2=1,
-                                  n_ic=hyp_params['num_init_conds'], dt=hyp_params['delta_t'],
-                                  tf=hyp_params['time_final'])
+    data = dat.data_maker_duffing_bollt(x_lower1=-1.5, x_upper1=1.5, x_lower2=-1, x_upper2=1,
+                                         n_ic=hyp_params['num_init_conds'], dt=hyp_params['delta_t'],
+                                         tf=hyp_params['time_final'])
     data = tf.cast(data[:, :, :2], dtype=hyp_params['precision'])
     # Save data to file
     pickle.dump(data, open(data_fname, 'wb'))
@@ -127,4 +127,10 @@ val_set = val_set.prefetch(tf.data.AUTOTUNE)
 results = tr.train_model(hyp_params=hyp_params, train_data=train_data,
                          val_set=val_set, model=myMachine, loss=myLoss)
 print(results['model'].summary())
-exit()
+
+
+import matplotlib.pyplot as plt
+plt.figure(123)
+for ii in range(0, data.shape[0], 10):
+    plt.plot(data[ii, :, 0], data[ii, :, 1])
+plt.show()

@@ -94,14 +94,13 @@ def train_model(hyp_params, train_data, val_set, model, loss):
                       time=time.time() - epoch_time))
 
         # Save training diagnostic plots
-        if not model.pretrain:
-            if epoch == 1 or epoch % hyp_params['plot_every'] == 0:
-                if not os.path.exists(hyp_params['plot_path']):
-                    os.makedirs(hyp_params['plot_path'])
-                this_plot = hyp_params['plot_path'] + '/' + epoch_start_time.strftime("%Y%m%d%H%M%S") + '.png'
-                hf.diagnostic_plot(val_pred, val_batch, hyp_params, epoch,
-                                   this_plot, train_params['val_loss_comps_avgs'],
-                                   train_params['val_loss_results'])
+        if epoch == 1 or epoch % hyp_params['plot_every'] == 0:
+            if not os.path.exists(hyp_params['plot_path']):
+                os.makedirs(hyp_params['plot_path'])
+            this_plot = hyp_params['plot_path'] + '/' + epoch_start_time.strftime("%Y%m%d%H%M%S") + '.png'
+            hf.diagnostic_plot(val_pred, val_batch, hyp_params, epoch,
+                               this_plot, train_params['val_loss_comps_avgs'],
+                               train_params['val_loss_results'], model.pretrain)
 
         # Save model
         if epoch % hyp_params['save_every'] == 0 or epoch == hyp_params['max_epochs']:
