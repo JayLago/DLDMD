@@ -17,8 +17,8 @@ import Training as tr
 # ==============================================================================
 # Setup
 # ==============================================================================
-NUM_SAVES = 50       # Number of times to save the model throughout training
-NUM_PLOTS = 50      # Number of diagnostic plots to generate while training
+NUM_SAVES = 1       # Number of times to save the model throughout training
+NUM_PLOTS = 20      # Number of diagnostic plots to generate while training
 DEVICE = '/GPU:0'
 GPUS = tf.config.experimental.list_physical_devices('GPU')
 if GPUS:
@@ -53,7 +53,7 @@ hyp_params['num_init_conds'] = 15000
 hyp_params['num_train_init_conds'] = 10000
 hyp_params['num_val_init_conds'] = 3000
 hyp_params['num_test_init_conds'] = 2000
-hyp_params['time_final'] = 20
+hyp_params['time_final'] = 10
 hyp_params['delta_t'] = 0.05
 hyp_params['num_time_steps'] = int(hyp_params['time_final']/hyp_params['delta_t'] + 1)
 hyp_params['num_pred_steps'] = hyp_params['num_time_steps']
