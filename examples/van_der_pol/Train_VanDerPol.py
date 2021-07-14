@@ -54,7 +54,7 @@ hyp_params['num_init_conds'] = 15000
 hyp_params['num_train_init_conds'] = 10000
 hyp_params['num_val_init_conds'] = 3000
 hyp_params['num_test_init_conds'] = 2000
-hyp_params['time_final'] = 10
+hyp_params['time_final'] = 20
 hyp_params['delta_t'] = 0.02
 hyp_params['mu'] = 1.5
 hyp_params['num_time_steps'] = int(hyp_params['time_final']/hyp_params['delta_t'])
@@ -67,14 +67,14 @@ hyp_params['num_pretrain'] = 20
 
 # Universal network layer parameters (AE & Aux)
 hyp_params['optimizer'] = 'adam'
-hyp_params['batch_size'] = 256
+hyp_params['batch_size'] = 128
 hyp_params['phys_dim'] = 2
 hyp_params['latent_dim'] = 8
 hyp_params['hidden_activation'] = tf.keras.activations.relu
 hyp_params['bias_initializer'] = tf.keras.initializers.Zeros
 
 # Encoding/Decoding Layer Parameters
-hyp_params['num_en_layers'] = 2
+hyp_params['num_en_layers'] = 3
 hyp_params['num_en_neurons'] = 128
 hyp_params['kernel_init_enc'] = tf.keras.initializers.TruncatedNormal(mean=0.0, stddev=0.1)
 hyp_params['kernel_init_dec'] = tf.keras.initializers.TruncatedNormal(mean=0.0, stddev=0.1)
@@ -131,8 +131,15 @@ data = dat
 shuffled_data = tf.random.shuffle(data)
 ntic = hyp_params['num_train_init_conds']
 nvic = hyp_params['num_val_init_conds']
-train_data = tf.data.Dataset.from_tensor_slices(shuffled_data[:ntic, :, :])
-val_data = tf.data.Dataset.from_tensor_slices(shuffled_data[ntic:ntic+nvic, :, :])
+train_data = shuffled_data[:ntic, :, :]
+val_data = shuffled_data[ntic:ntic+nvic, :, :]
+test_data = shuffled_data[ntic+nvic:, :, :]
+pickle.dump(train_data, open('data_train.pkl', 'wb'))
+pickle.dump(val_data, open('data_val.pkl', 'wb'))
+pickle.dump(test_data, open('data_test.pkl', 'wb'))
+train_data = tf.data.Dataset.from_tensor_slices(train_data)
+val_data = tf.data.Dataset.from_tensor_slices(val_data)
+test_data = tf.data.Dataset.from_tensor_slices(test_data)
 
 # Batch and prefetch the validation data to the GPUs
 val_set = val_data.batch(hyp_params['batch_size'], drop_remainder=True)
