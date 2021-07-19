@@ -58,7 +58,7 @@ def dyn_sys_kdv(lhs, a1=0, c=3):
     rhs[1] = a1 + c*lhs[0] - 3*lhs[0]**2
     return rhs
 
-def dyn_sys_duffing(lhs, alpha=0.1, gamma=0.05, omega=1.1):
+def dyn_sys_duffing_driven(lhs, alpha=0.1, gamma=0.05, omega=1.1):
     """ Duffing oscillator:
     dx/dt = y
     dy/dt = x - x^3 - gamma*y + alpha*cos(omega*t)
@@ -67,6 +67,26 @@ def dyn_sys_duffing(lhs, alpha=0.1, gamma=0.05, omega=1.1):
     rhs[0] = lhs[1]
     rhs[1] = lhs[0] - lhs[0]**3 - gamma*lhs[1] + alpha*np.cos(omega*lhs[2])
     rhs[2] = lhs[2]
+    return rhs
+
+def dyn_sys_duffing(lhs):
+    """ Duffing oscillator:
+    dx/dt = y
+    dy/dt = x - x^3
+    """
+    rhs = np.zeros(2)
+    rhs[0] = lhs[1]
+    rhs[1] = lhs[0] - lhs[0]**3
+    return rhs
+
+def dyn_sys_duffing_bollt(lhs, alpha=1.0, beta=-1.0, delta=0.5):
+    """ Duffing oscillator:
+    dx/dt = y
+    dy/dt = -delta*y - x*(beta + alpha*x^2)
+    """
+    rhs = np.zeros(2)
+    rhs[0] = lhs[1]
+    rhs[1] = -delta*lhs[1] - lhs[0]*(beta + alpha*lhs[0]**2)
     return rhs
 
 def rk4(lhs, dt, function):
@@ -285,7 +305,7 @@ def data_maker_kdv(x_lower1, x_upper1, x_lower2, x_upper2, n_ic=10000, dt=0.01, 
     data_mat = data_mat[:n_ic, :, :]
     return np.transpose(data_mat, [0, 2, 1])
 
-def data_maker_duffing(x_lower1, x_upper1, x_lower2, x_upper2, n_ic=10000, dt=0.01, tf=1.0, seed=None):
+def data_maker_duffing_driven(x_lower1, x_upper1, x_lower2, x_upper2, n_ic=10000, dt=0.01, tf=1.0, seed=None):
     # Setup
     np.random.seed(seed=seed)
     nsteps = int(tf / dt)
@@ -298,9 +318,40 @@ def data_maker_duffing(x_lower1, x_upper1, x_lower2, x_upper2, n_ic=10000, dt=0.
     for ii in range(n_ic):
         data_mat[ii, :2, 0] = np.array([icond1[ii], icond2[ii]], dtype=np.float64)
         for jj in range(nsteps):
-            data_mat[ii, :, jj+1] = rk4(data_mat[ii, :, jj], dt, dyn_sys_duffing)
+            data_mat[ii, :, jj+1] = rk4(data_mat[ii, :, jj], dt, dyn_sys_duffing_driven)
             data_mat[ii, 2, jj+1] = data_mat[ii, 2, jj] + dt
+    return np.transpose(data_mat, [0, 2, 1])
 
+def data_maker_duffing(x_lower1, x_upper1, x_lower2, x_upper2, n_ic=10000, dt=0.01, tf=1.0, seed=None):
+    # Setup
+    np.random.seed(seed=seed)
+    nsteps = int(tf / dt)
+    n_ic = int(n_ic)
+    # Generate initial conditions
+    icond1 = np.random.uniform(x_lower1, x_upper1, n_ic)
+    icond2 = np.random.uniform(x_lower2, x_upper2, n_ic)
+    # Integrate
+    data_mat = np.zeros((n_ic, 2, nsteps+1), dtype=np.float64)
+    for ii in range(n_ic):
+        data_mat[ii, :, 0] = np.array([icond1[ii], icond2[ii]], dtype=np.float64)
+        for jj in range(nsteps):
+            data_mat[ii, :, jj+1] = rk4(data_mat[ii, :, jj], dt, dyn_sys_duffing)
+    return np.transpose(data_mat, [0, 2, 1])
+
+def data_maker_duffing_bollt(x_lower1, x_upper1, x_lower2, x_upper2, n_ic=10000, dt=0.01, tf=1.0, seed=None):
+    # Setup
+    np.random.seed(seed=seed)
+    nsteps = int(tf / dt)
+    n_ic = int(n_ic)
+    # Generate initial conditions
+    icond1 = np.random.uniform(x_lower1, x_upper1, n_ic)
+    icond2 = np.random.uniform(x_lower2, x_upper2, n_ic)
+    # Integrate
+    data_mat = np.zeros((n_ic, 2, nsteps+1), dtype=np.float64)
+    for ii in range(n_ic):
+        data_mat[ii, :, 0] = np.array([icond1[ii], icond2[ii]], dtype=np.float64)
+        for jj in range(nsteps):
+            data_mat[ii, :, jj+1] = rk4(data_mat[ii, :, jj], dt, dyn_sys_duffing_bollt)
     return np.transpose(data_mat, [0, 2, 1])
 
 # ==============================================================================
