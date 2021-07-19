@@ -12,6 +12,7 @@ __pycache__/
 #*.pkl
 #*.h5
 .DS_Store
+.vscode/
 
 # Jupyter Notebook
 .ipynb_checkpoints
