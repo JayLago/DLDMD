@@ -8,7 +8,6 @@ import time
 import datetime as dt
 import numpy as np
 import tensorflow as tf
-
 import HelperFuns as hf
 
 
@@ -40,19 +39,17 @@ def train_model(hyp_params, train_data, val_set, model, loss):
         # Pretraining the autoencoder
         if hyp_params['pretrain'] and epoch < hyp_params['num_pretrain']:
             print("pretraining...")
-            loss.a1 = tf.constant(1.0, dtype=hyp_params['precision'])  # AE
-            loss.a2 = tf.constant(0.0, dtype=hyp_params['precision'])  # X predictions
-            loss.a3 = tf.constant(0.0, dtype=hyp_params['precision'])  # Y predictions
-            loss.a4 = tf.constant(0.0, dtype=hyp_params['precision'])  # max norm on x_adv/x_ae
-            loss.a5 = tf.constant(1e-6, dtype=hyp_params['precision'])  # W regularization
+            loss.a1 = tf.constant(1.0, dtype=hyp_params['precision'])   # Reconstruction
+            loss.a2 = tf.constant(0.0, dtype=hyp_params['precision'])   # DMD loss
+            loss.a3 = tf.constant(0.0, dtype=hyp_params['precision'])   # Prediction loss
+            loss.a4 = tf.constant(1e-6, dtype=hyp_params['precision'])  # Regularization
         else:
             model.pretrain = False
             loss.pretrain = False
-            loss.a1 = hyp_params['a1']  # AE
-            loss.a2 = hyp_params['a2']  # X predictions
-            loss.a3 = hyp_params['a3']  # Y predictions
-            loss.a4 = hyp_params['a4']  # max norm on x_adv/x_ae
-            loss.a5 = hyp_params['a5']  # W regularization
+            loss.a1 = hyp_params['a1']  # Reconstruction
+            loss.a2 = hyp_params['a2']  # DMD loss
+            loss.a3 = hyp_params['a3']  # Prediction loss
+            loss.a5 = hyp_params['a4']  # Regularization
 
         # Begin batch training
         with tf.device(hyp_params['device']):
@@ -70,7 +67,6 @@ def train_model(hyp_params, train_data, val_set, model, loss):
             lrecon = tf.keras.metrics.Mean()
             lpred = tf.keras.metrics.Mean()
             ldmd = tf.keras.metrics.Mean()
-            linf = tf.keras.metrics.Mean()
             for val_batch in val_set:
                 val_pred = model(val_batch)
                 val_loss = loss(val_pred, val_batch)
@@ -79,9 +75,7 @@ def train_model(hyp_params, train_data, val_set, model, loss):
                 lrecon.update_state(np.log10(loss.loss_recon))
                 lpred.update_state(np.log10(loss.loss_pred))
                 ldmd.update_state(np.log10(loss.loss_dmd))
-                linf.update_state(np.log10(loss.loss_inf))
-            train_params['val_loss_comps_avgs'].append([lrecon.result(), lpred.result(),
-                                                        ldmd.result(), linf.result()])
+            train_params['val_loss_comps_avgs'].append([lrecon.result(), lpred.result(), ldmd.result()])
 
         # Report training status
         train_params['train_loss_results'].append(np.log10(epoch_loss_avg_train.result()))

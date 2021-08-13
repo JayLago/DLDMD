@@ -3,6 +3,7 @@
         Jay Lago, SDSU, 2021
 """
 import tensorflow as tf
+import numpy as np
 import pickle
 import datetime as dt
 import os
@@ -58,7 +59,7 @@ hyp_params['time_final'] = 20
 hyp_params['delta_t'] = 0.02
 hyp_params['num_time_steps'] = int(hyp_params['time_final'] / hyp_params['delta_t'] + 1)
 hyp_params['num_pred_steps'] = hyp_params['num_time_steps']
-hyp_params['max_epochs'] = 100
+hyp_params['max_epochs'] = 500
 hyp_params['save_every'] = hyp_params['max_epochs'] // NUM_SAVES
 hyp_params['plot_every'] = hyp_params['max_epochs'] // NUM_PLOTS
 hyp_params['pretrain'] = True
@@ -66,25 +67,24 @@ hyp_params['num_pretrain'] = 10
 
 # Universal network layer parameters (AE & Aux)
 hyp_params['optimizer'] = 'adam'
-hyp_params['batch_size'] = 512
+hyp_params['batch_size'] = 256
 hyp_params['phys_dim'] = 3
-hyp_params['latent_dim'] = 3
+hyp_params['latent_dim'] = 6
 hyp_params['hidden_activation'] = tf.keras.activations.relu
 hyp_params['bias_initializer'] = tf.keras.initializers.Zeros
 
 # Encoding/Decoding Layer Parameters
 hyp_params['num_en_layers'] = 3
-hyp_params['num_en_neurons'] = 64
+hyp_params['num_en_neurons'] = 128
 hyp_params['kernel_init_enc'] = tf.keras.initializers.TruncatedNormal(mean=0.0, stddev=0.1)
 hyp_params['kernel_init_dec'] = tf.keras.initializers.TruncatedNormal(mean=0.0, stddev=0.1)
 hyp_params['ae_output_activation'] = tf.keras.activations.linear
 
 # Loss Function Parameters
 hyp_params['a1'] = tf.constant(1, dtype=hyp_params['precision'])        # Reconstruction
-hyp_params['a2'] = tf.constant(1, dtype=hyp_params['precision'])        # X prediction
-hyp_params['a3'] = tf.constant(1, dtype=hyp_params['precision'])        # Y prediction
-hyp_params['a4'] = tf.constant(1e-12, dtype=hyp_params['precision'])    # L-inf
-hyp_params['a5'] = tf.constant(1e-13, dtype=hyp_params['precision'])    # L-2 on weights
+hyp_params['a2'] = tf.constant(1, dtype=hyp_params['precision'])        # DMD
+hyp_params['a3'] = tf.constant(1, dtype=hyp_params['precision'])        # Prediction
+hyp_params['a4'] = tf.constant(1e-14, dtype=hyp_params['precision'])    # L-2 on weights
 
 # Learning rate
 hyp_params['lr'] = 1e-3  # Learning rate
@@ -118,8 +118,15 @@ else:
 shuffled_data = tf.random.shuffle(data)
 ntic = hyp_params['num_train_init_conds']
 nvic = hyp_params['num_val_init_conds']
-train_data = tf.data.Dataset.from_tensor_slices(shuffled_data[:ntic, :, :])
-val_data = tf.data.Dataset.from_tensor_slices(shuffled_data[ntic:ntic+nvic, :, :])
+train_data = shuffled_data[:ntic, :, :]
+val_data = shuffled_data[ntic:ntic+nvic, :, :]
+test_data = shuffled_data[ntic+nvic:, :, :]
+pickle.dump(train_data, open('data_train.pkl', 'wb'))
+pickle.dump(val_data, open('data_val.pkl', 'wb'))
+pickle.dump(test_data, open('data_test.pkl', 'wb'))
+train_data = tf.data.Dataset.from_tensor_slices(train_data)
+val_data = tf.data.Dataset.from_tensor_slices(val_data)
+test_data = tf.data.Dataset.from_tensor_slices(test_data)
 
 # Batch and prefetch the validation data to the GPUs
 val_set = val_data.batch(hyp_params['batch_size'], drop_remainder=True)

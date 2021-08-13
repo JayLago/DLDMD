@@ -65,7 +65,7 @@ hyp_params['num_pretrain'] = 10
 
 # Universal network layer parameters (AE & Aux)
 hyp_params['optimizer'] = 'adam'
-hyp_params['batch_size'] = 512
+hyp_params['batch_size'] = 256
 hyp_params['phys_dim'] = 3
 hyp_params['latent_dim'] = 3
 hyp_params['hidden_activation'] = tf.keras.activations.relu
@@ -79,11 +79,10 @@ hyp_params['kernel_init_dec'] = tf.keras.initializers.TruncatedNormal(mean=0.0, 
 hyp_params['ae_output_activation'] = tf.keras.activations.linear
 
 # Loss Function Parameters
-hyp_params['a1'] = tf.constant(1e-1, dtype=hyp_params['precision'])         # Reconstruction
-hyp_params['a2'] = tf.constant(1, dtype=hyp_params['precision'])            # X prediction
-hyp_params['a3'] = tf.constant(1, dtype=hyp_params['precision'])            # Y prediction
-hyp_params['a4'] = tf.constant(1e-7, dtype=hyp_params['precision'])         # L-inf
-hyp_params['a5'] = tf.constant(1e-13, dtype=hyp_params['precision'])        # L-2 on weights
+hyp_params['a1'] = tf.constant(1, dtype=hyp_params['precision'])        # Reconstruction
+hyp_params['a2'] = tf.constant(1, dtype=hyp_params['precision'])        # DMD
+hyp_params['a3'] = tf.constant(1, dtype=hyp_params['precision'])        # Prediction
+hyp_params['a4'] = tf.constant(1e-14, dtype=hyp_params['precision'])    # L-2 on weights
 
 # Learning rate
 hyp_params['lr'] = 1e-3
