@@ -17,13 +17,14 @@ matplotlib.rc('font', **font)
 def diagnostic_plot(y_pred, y_true, hyp_params, epoch, save_path, loss_comps, val_loss, pretrain):
     if hyp_params['experiment'] == 'discrete' or \
             hyp_params['experiment'] == 'pendulum' or \
-            hyp_params['experiment'] == 'van_der_pol' or \
-            hyp_params['experiment'] == 'duffing' or \
             hyp_params['experiment'] == 'kdv':
         plot_2D(y_pred, y_true, hyp_params, epoch, save_path, loss_comps, val_loss, pretrain)
     elif hyp_params['experiment'] == 'fluid_flow_slow' or \
             hyp_params['experiment'] == 'fluid_flow_full':
         plot_3d(y_pred, y_true, hyp_params, epoch, save_path, loss_comps, val_loss, pretrain)
+    elif hyp_params['experiment'] == 'duffing' or \
+            hyp_params['experiment'] == 'van_der_pol':
+        plot_3d_latent(y_pred, y_true, hyp_params, epoch, save_path, loss_comps, val_loss, pretrain)
     else:
         print("unknown experiment, create new diagnostic plots")
 
@@ -36,12 +37,12 @@ def plot_2D(y_pred, y_true, hyp_params, epoch, save_path, loss_comps, val_loss, 
 
     fig, ax = plt.subplots(nrows=3, ncols=3, sharex=False, sharey=False, figsize=(40, 20))
     ax = ax.flat
-    skip = 1
+    skip = 16
 
     # Validation batch
     for ii in np.arange(0, y_true.shape[0], skip):
         ax[0].plot(y_true[ii, :, 0], y_true[ii, :, 1], '-')
-    ax[0].scatter(y_true[:, 0, 0], y_true[:, 0, 1])
+    ax[0].scatter(y_true[::skip, 0, 0], y_true[::skip, 0, 1])
     ax[0].grid()
     ax[0].set_xlabel("x1")
     ax[0].set_ylabel("x2")
@@ -51,7 +52,7 @@ def plot_2D(y_pred, y_true, hyp_params, epoch, save_path, loss_comps, val_loss, 
         # Encoded-advanced-decoded time series
         for ii in np.arange(0, enc_adv_dec.shape[0], skip):
             ax[1].plot(enc_adv_dec[ii, :, 0], enc_adv_dec[ii, :, 1], '-')
-        ax[1].scatter(enc_adv_dec[:, 0, 0], enc_adv_dec[:, 0, 1])
+        ax[1].scatter(enc_adv_dec[::skip, 0, 0], enc_adv_dec[::skip, 0, 1])
         ax[1].grid()
         ax[1].set_xlabel("x1")
         ax[1].set_ylabel("x2")
@@ -60,7 +61,7 @@ def plot_2D(y_pred, y_true, hyp_params, epoch, save_path, loss_comps, val_loss, 
     # Encoded time series
     for ii in np.arange(0, enc.shape[0], skip):
         ax[2].plot(enc[ii, :, 0], enc[ii, :, 1], '-')
-    ax[2].scatter(enc[:, 0, 0], enc[:, 0, 1])
+    ax[2].scatter(enc[::skip, 0, 0], enc[::skip, 0, 1])
     ax[2].grid()
     ax[2].set_xlabel("y1")
     ax[2].set_ylabel("y2")
@@ -70,7 +71,7 @@ def plot_2D(y_pred, y_true, hyp_params, epoch, save_path, loss_comps, val_loss, 
     # Encoded-decoded time series
     for ii in np.arange(0, enc_dec.shape[0], skip):
         ax[3].plot(enc_dec[ii, :, 0], enc_dec[ii, :, 1], '-')
-    ax[3].scatter(enc_dec[:, 0, 0], enc_dec[:, 0, 1])
+    ax[3].scatter(enc_dec[::skip, 0, 0], enc_dec[::skip, 0, 1])
     ax[3].grid()
     ax[3].set_xlabel("x1")
     ax[3].set_ylabel("x2")
@@ -80,7 +81,7 @@ def plot_2D(y_pred, y_true, hyp_params, epoch, save_path, loss_comps, val_loss, 
         # Encoded-advanced time series
         for ii in np.arange(0, enc_adv.shape[0], skip):
             ax[4].plot(enc_adv[ii, :, 0], enc_adv[ii, :, 1], '-')
-        ax[4].scatter(enc_adv[:, 0, 0], enc_adv[:, 0, 1])
+        ax[4].scatter(enc_adv[::skip, 0, 0], enc_adv[::skip, 0, 1])
         ax[4].grid()
         ax[4].set_xlabel("y1")
         ax[4].set_ylabel("y2")
@@ -193,6 +194,126 @@ def plot_3d(y_pred, y_true, hyp_params, epoch, save_path, loss_comps, val_loss, 
     ax.set_xlabel("$x_{1}$")
     ax.set_ylabel("$x_{2}$")
     ax.set_zlabel("$x_{3}$")
+    ax.set_title("Encoded-Decoded (x_ae)")
+
+    if not pretrain:
+        # Encoded-advanced time series
+        ax = fig.add_subplot(3, 3, 5, projection='3d')
+        for ii in np.arange(0, enc_adv.shape[0], skip):
+            ii = int(ii)
+            x1 = enc_adv[ii, :, 0]
+            x2 = enc_adv[ii, :, 1]
+            x3 = enc_adv[ii, :, 2]
+            ax.plot3D(x1, x2, x3)
+        ax.set_xlabel("$y_{1}$")
+        ax.set_ylabel("$y_{2}$")
+        ax.set_zlabel("$y_{3}$")
+        ax.set_title("Encoded-Advanced (y_adv))")
+
+    # Loss components
+    lw = 3
+    loss_comps = np.asarray(loss_comps)
+    ax = fig.add_subplot(3, 3, 6)
+    ax.plot(val_loss, color='k', linewidth=lw, label='total')
+    ax.set_title("Total Loss")
+    ax.grid()
+    ax.set_xlabel("Epoch")
+    ax.set_ylabel("$log_{10}(L)$")
+    ax.legend(loc="upper right")
+
+    ax = fig.add_subplot(3, 3, 7)
+    ax.plot(loss_comps[:, 0], color='r', linewidth=lw, label='recon')
+    ax.set_title("Recon Loss")
+    ax.grid()
+    ax.set_xlabel("Epoch")
+    ax.set_ylabel("$log_{10}(L_{recon})$")
+    ax.legend(loc="upper right")
+
+    if not pretrain:
+        ax = fig.add_subplot(3, 3, 8)
+        ax.plot(loss_comps[:, 1], color='b', linewidth=lw, label='pred')
+        ax.set_title("Prediction Loss")
+        ax.grid()
+        ax.set_xlabel("Epoch")
+        ax.set_ylabel("$log_{10}(L_{pred})$")
+        ax.legend(loc="upper right")
+
+        ax = fig.add_subplot(3, 3, 9)
+        ax.plot(loss_comps[:, 2], color='g', linewidth=lw, label='dmd')
+        ax.set_title("DMD")
+        ax.grid()
+        ax.set_xlabel("Epoch")
+        ax.set_ylabel("$log_{10}(L_{dmd})$")
+        ax.legend(loc="upper right")
+
+    fig.suptitle(
+        "Epoch: {cur_epoch}/{max_epoch}, Learn Rate: {lr:.5f}, Val. Loss: {loss:.3f}".format(
+            cur_epoch=epoch,
+            max_epoch=hyp_params['max_epochs'],
+            lr=hyp_params['lr'],
+            loss=val_loss[-1]))
+
+    plt.savefig(save_path)
+    plt.close()
+
+
+def plot_3d_latent(y_pred, y_true, hyp_params, epoch, save_path, loss_comps, val_loss, pretrain):
+    enc = y_pred[0]
+    enc_dec = y_pred[1]
+    enc_adv_dec = y_pred[2]
+    enc_adv = y_pred[3]
+
+    font = {'family': 'DejaVu Sans', 'size': 10}
+    matplotlib.rc('font', **font)
+
+    skip = 8
+    fig = plt.figure(figsize=(40, 20))
+
+    # Validation batch
+    ax = fig.add_subplot(3, 3, 1)
+    for ii in np.arange(0, y_true.shape[0], skip):
+        ii = int(ii)
+        x1 = y_true[ii, :, 0]
+        x2 = y_true[ii, :, 1]
+        ax.plot(x1, x2)
+    ax.set_xlabel("$x_{1}$")
+    ax.set_ylabel("$x_{2}$")
+    ax.set_title("Validation Data (x)")
+
+    if not pretrain:
+        # Encoded-advanced-decoded time series
+        ax = fig.add_subplot(3, 3, 2)
+        for ii in np.arange(0, enc_adv_dec.shape[0], skip):
+            ii = int(ii)
+            x1 = enc_adv_dec[ii, :, 0]
+            x2 = enc_adv_dec[ii, :, 1]
+            ax.plot(x1, x2)
+        ax.set_xlabel("$x_{1}$")
+        ax.set_ylabel("$x_{2}$")
+        ax.set_title("Encoded-Advanced-Decoded (x_adv))")
+
+    # Encoded time series
+    ax = fig.add_subplot(3, 3, 3, projection='3d')
+    for ii in np.arange(0, enc.shape[0], skip):
+        ii = int(ii)
+        x1 = enc[ii, :, 0]
+        x2 = enc[ii, :, 1]
+        x3 = enc[ii, :, 2]
+        ax.plot3D(x1, x2, x3)
+    ax.set_xlabel("$y_{1}$")
+    ax.set_ylabel("$y_{2}$")
+    ax.set_zlabel("$y_{3}$")
+    ax.set_title("Encoded (y)")
+
+    # Encoded-decoded time series
+    ax = fig.add_subplot(3, 3, 4)
+    for ii in np.arange(0, enc_dec.shape[0], skip):
+        ii = int(ii)
+        x1 = enc_dec[ii, :, 0]
+        x2 = enc_dec[ii, :, 1]
+        ax.plot(x1, x2)
+    ax.set_xlabel("$x_{1}$")
+    ax.set_ylabel("$x_{2}$")
     ax.set_title("Encoded-Decoded (x_ae)")
 
     if not pretrain:

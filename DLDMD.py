@@ -26,59 +26,51 @@ class DLDMD(keras.Model):
         self.dec_input = (self.num_time_steps, self.latent_dim)
         self.pretrain = hyp_params['pretrain']
         self.precision = hyp_params['precision']
+        if self.precision == 'float32':
+            self.precision_complex = tf.complex64
+        else:
+            self.precision_complex = tf.complex128
         self.dmd_threshold = -10
 
         # Construct the ENCODER network
         self.encoder = keras.Sequential(name="encoder")
-        self.encoder.add(Conv1D(filters=self.num_neurons,
-                                kernel_size=(self.kernel_size,),
-                                input_shape=self.enc_input,
-                                activation=hyp_params['hidden_activation'],
-                                padding='same',
-                                kernel_initializer=hyp_params['kernel_init_enc'],
-                                bias_initializer=hyp_params['bias_initializer'],
-                                trainable=True, name='enc_in'))
-        for ii in range(self.num_en_layers - 1):
-            self.encoder.add(Conv1D(self.num_neurons,
-                                    kernel_size=(self.kernel_size,),
-                                    activation=hyp_params['hidden_activation'],
-                                    padding='same',
-                                    kernel_initializer=hyp_params['kernel_init_enc'],
-                                    bias_initializer=hyp_params['bias_initializer'],
-                                    trainable=True, name='enc_' + str(ii)))
-        self.encoder.add(Conv1D(self.latent_dim,
-                                kernel_size=(self.kernel_size,),
-                                activation=hyp_params['ae_output_activation'],
-                                padding='same',
-                                kernel_initializer=hyp_params['kernel_init_enc'],
-                                bias_initializer=hyp_params['bias_initializer'],
-                                trainable=True, name='enc_out'))
+        self.encoder.add(Dense(self.num_neurons,
+                               input_shape=self.enc_input,
+                               activation=hyp_params['hidden_activation'],
+                               kernel_initializer=hyp_params['kernel_init_enc'],
+                               bias_initializer=hyp_params['bias_initializer'],
+                               trainable=True, name='enc_in'))
+        for ii in range(self.num_en_layers):
+            self.encoder.add(Dense(self.num_neurons,
+                                   activation=hyp_params['hidden_activation'],
+                                   kernel_initializer=hyp_params['kernel_init_enc'],
+                                   bias_initializer=hyp_params['bias_initializer'],
+                                   trainable=True, name='enc_' + str(ii)))
+        self.encoder.add(Dense(self.latent_dim,
+                               activation=hyp_params['ae_output_activation'],
+                               kernel_initializer=hyp_params['kernel_init_enc'],
+                               bias_initializer=hyp_params['bias_initializer'],
+                               trainable=True, name='enc_out'))
 
         # Construct the DECODER network
         self.decoder = keras.Sequential(name="decoder")
-        self.decoder.add(Conv1D(filters=self.num_neurons,
-                                kernel_size=(self.kernel_size,),
-                                input_shape=self.dec_input,
-                                activation=hyp_params['hidden_activation'],
-                                padding='same',
-                                kernel_initializer=hyp_params['kernel_init_enc'],
-                                bias_initializer=hyp_params['bias_initializer'],
-                                trainable=True, name='dec_in'))
-        for ii in range(self.num_en_layers - 1):
-            self.decoder.add(Conv1D(self.num_neurons,
-                                    kernel_size=(self.kernel_size,),
-                                    activation=hyp_params['hidden_activation'],
-                                    padding='same',
-                                    kernel_initializer=hyp_params['kernel_init_dec'],
-                                    bias_initializer=hyp_params['bias_initializer'],
-                                    trainable=True, name='dec_' + str(ii)))
-        self.decoder.add(Conv1D(self.phys_dim,
-                                kernel_size=(self.kernel_size,),
-                                activation=hyp_params['ae_output_activation'],
-                                padding='same',
-                                kernel_initializer=hyp_params['kernel_init_dec'],
-                                bias_initializer=hyp_params['bias_initializer'],
-                                trainable=True, name='dec_out'))
+        self.decoder.add(Dense(self.num_neurons,
+                               input_shape=self.dec_input,
+                               activation=hyp_params['hidden_activation'],
+                               kernel_initializer=hyp_params['kernel_init_enc'],
+                               bias_initializer=hyp_params['bias_initializer'],
+                               trainable=True, name='dec_in'))
+        for ii in range(self.num_en_layers):
+            self.decoder.add(Dense(self.num_neurons,
+                                   activation=hyp_params['hidden_activation'],
+                                   kernel_initializer=hyp_params['kernel_init_dec'],
+                                   bias_initializer=hyp_params['bias_initializer'],
+                                   trainable=True, name='dec_' + str(ii)))
+        self.decoder.add(Dense(self.phys_dim,
+                               activation=hyp_params['ae_output_activation'],
+                               kernel_initializer=hyp_params['kernel_init_dec'],
+                               bias_initializer=hyp_params['bias_initializer'],
+                               trainable=True, name='dec_out'))
 
     def call(self, x):
         # Encoder on the entire time series
@@ -89,9 +81,9 @@ class DLDMD(keras.Model):
             x_adv = tf.zeros(shape=x.shape, dtype=self.precision)
             y_adv_real = tf.zeros(shape=y.shape, dtype=self.precision)
             y_adv_imag = tf.zeros(shape=y.shape, dtype=self.precision)
-            Lam = tf.zeros(shape=(self.batch_size, self.latent_dim), dtype=tf.complex128)
-            Phi = tf.zeros(shape=(self.batch_size, self.latent_dim, self.latent_dim), dtype=tf.complex128)
-            b = tf.zeros(shape=(self.batch_size, self.latent_dim), dtype=tf.complex128)
+            Lam = tf.zeros(shape=(self.batch_size, self.latent_dim), dtype=self.precision_complex)
+            Phi = tf.zeros(shape=(self.batch_size, self.latent_dim, self.latent_dim), dtype=self.precision_complex)
+            b = tf.zeros(shape=(self.batch_size, self.latent_dim), dtype=self.precision_complex)
         else:
             # Reshape for DMD step
             yt = tf.transpose(y, [0, 2, 1])
@@ -111,7 +103,6 @@ class DLDMD(keras.Model):
 
         return [y, x_ae, x_adv, y_adv_real, y_adv_imag, weights, Lam, Phi, b]
 
-    # @tf.function
     def edmd(self, Y):
         Y_m = Y[:, :, :-1]
         Y_p = Y[:, :, 1:]
@@ -123,15 +114,16 @@ class DLDMD(keras.Model):
         Urh = tf.linalg.adjoint(Ur)
         Vr = V[:, :, :r]
 
-        A = Y_p @ (Vr @ (sigr_inv @ Urh))
+        A = Y_p @ Vr @ sigr_inv @ Urh
         evals, evecs = tf.linalg.eig(A)
-        Phi = tf.linalg.solve(evecs, tf.cast(Y_m, dtype=tf.complex128))
+        Phi = tf.linalg.solve(evecs, tf.cast(Y_m, dtype=self.precision_complex))
         y0 = Phi[:, :, 0]
         y0 = y0[:, :, tf.newaxis]
 
-        recon = tf.TensorArray(tf.complex128, size=self.num_pred_steps)
-        evals_k = evals**2
-        for ii in tf.range(self.num_pred_steps):
+        recon = tf.TensorArray(self.precision_complex, size=self.num_pred_steps)
+        recon = recon.write(0, evecs @ y0)
+        evals_k = tf.identity(evals)
+        for ii in tf.range(1, self.num_pred_steps):
             tmp = evecs @ (tf.linalg.diag(evals_k) @ y0)
             recon = recon.write(ii, tmp)
             evals_k = evals_k * evals

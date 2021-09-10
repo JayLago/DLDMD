@@ -39,6 +39,7 @@ class LossDLDMD(keras.losses.Loss):
             y = tf.identity(model[0])
             x_ae = tf.identity(model[1])
             x_adv = tf.identity(model[2])
+            y_adv = tf.identity(model[3])
             weights = model[5]
             pred_horizon = -1
 
@@ -47,6 +48,7 @@ class LossDLDMD(keras.losses.Loss):
 
             # DMD reconstruction in the latent space
             self.loss_dmd = self.dmdloss(y)
+            # self.loss_dmd = tf.reduce_mean(MSE(y_adv[:, :pred_horizon, :], y[:, :pred_horizon, :]))
 
             # Future state prediction
             self.loss_pred = tf.reduce_mean(MSE(obs[:, :pred_horizon, :], x_adv[:, :pred_horizon, :]))
@@ -60,13 +62,12 @@ class LossDLDMD(keras.losses.Loss):
 
         return self.total_loss
 
-    # @tf.function
+    @tf.function
     def dmdloss(self, y):
         y_m = tf.transpose(y, perm=[0, 2, 1])[:, :, :-1]
         y_p = tf.transpose(y, perm=[0, 2, 1])[:, :, 1:]
         [_, _, V] = tf.linalg.svd(y_m, compute_uv=True, full_matrices=False)
-        Vh = tf.linalg.adjoint(V)
-        VVh = V @ Vh
+        VVh = V @ tf.linalg.adjoint(V)
         eye_mat = tf.eye(VVh.shape[-1], batch_shape=[VVh.shape[0]], dtype=self.precision)
         return tf.reduce_mean(tf.norm(y_p @ (eye_mat - VVh), ord='fro', axis=[-2, -1]))
 

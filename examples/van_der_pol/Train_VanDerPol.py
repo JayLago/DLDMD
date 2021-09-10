@@ -2,6 +2,7 @@
     Author:
         Jay Lago, SDSU, 2021
 """
+#%%
 import tensorflow as tf
 import numpy as np
 import pickle
@@ -54,7 +55,7 @@ hyp_params['num_init_conds'] = 15000
 hyp_params['num_train_init_conds'] = 10000
 hyp_params['num_val_init_conds'] = 3000
 hyp_params['num_test_init_conds'] = 2000
-hyp_params['time_final'] = 20
+hyp_params['time_final'] = 10
 hyp_params['delta_t'] = 0.02
 hyp_params['mu'] = 1.5
 hyp_params['num_time_steps'] = int(hyp_params['time_final']/hyp_params['delta_t'])
@@ -62,19 +63,19 @@ hyp_params['num_pred_steps'] = hyp_params['num_time_steps']
 hyp_params['max_epochs'] = 1000
 hyp_params['save_every'] = hyp_params['max_epochs'] // NUM_SAVES
 hyp_params['plot_every'] = hyp_params['max_epochs'] // NUM_PLOTS
-hyp_params['pretrain'] = True
-hyp_params['num_pretrain'] = 10
+hyp_params['pretrain'] = False
+hyp_params['num_pretrain'] = -1
 
 # Universal network layer parameters (AE & Aux)
 hyp_params['optimizer'] = 'adam'
-hyp_params['batch_size'] = 256
+hyp_params['batch_size'] = 1000
 hyp_params['phys_dim'] = 2
 hyp_params['latent_dim'] = 8
 hyp_params['hidden_activation'] = tf.keras.activations.relu
 hyp_params['bias_initializer'] = tf.keras.initializers.Zeros
 
 # Encoding/Decoding Layer Parameters
-hyp_params['num_en_layers'] = 3
+hyp_params['num_en_layers'] = 2
 hyp_params['num_en_neurons'] = 128
 hyp_params['kernel_init_enc'] = tf.keras.initializers.TruncatedNormal(mean=0.0, stddev=0.1)
 hyp_params['kernel_init_dec'] = tf.keras.initializers.TruncatedNormal(mean=0.0, stddev=0.1)
@@ -118,13 +119,13 @@ else:
     data = tf.cast(data, dtype=hyp_params['precision'])
     pickle.dump(data, open(data_fname, 'wb'))
 
-# Normalize
-dat = data.numpy()
-x1min, x1max, x1mean = np.min(dat[:, :, 0]), np.max(dat[:, :, 0]), np.mean(dat[:, :, 0])
-x2min, x2max, x2mean = np.min(dat[:, :, 1]), np.max(dat[:, :, 1]), np.mean(dat[:, :, 1])
-dat[:, :, 0] = (dat[:, :, 0] - x1mean) / (x1max - x1min)
-dat[:, :, 1] = (dat[:, :, 1] - x2mean) / (x2max - x2min)
-data = dat
+# # Normalize
+# dat = data.numpy()
+# x1min, x1max, x1mean = np.min(dat[:, :, 0]), np.max(dat[:, :, 0]), np.mean(dat[:, :, 0])
+# x2min, x2max, x2mean = np.min(dat[:, :, 1]), np.max(dat[:, :, 1]), np.mean(dat[:, :, 1])
+# dat[:, :, 0] = (dat[:, :, 0] - x1mean) / (x1max - x1min)
+# dat[:, :, 1] = (dat[:, :, 1] - x2mean) / (x2max - x2min)
+# data = dat
 
 # Create training and validation datasets from the initial conditions
 shuffled_data = tf.random.shuffle(data)
