@@ -1,5 +1,10 @@
 # Ignore these
 *_data.pkl
+data_train.pkl
+data_val.pkl
+data_test.pkl
+trained_models/
+training_results/
 *.png
 *.pkl
 *.h5

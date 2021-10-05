@@ -1,6 +1,6 @@
 """
     Author:
-        Jay Lago, SDSU, 2021
+        Jay Lago, NIWC/SDSU, 2021
 """
 import tensorflow as tf
 from tensorflow import keras
@@ -17,7 +17,6 @@ class LossDLDMD(keras.losses.Loss):
         self.a3 = hyp_params['a3']
         self.a4 = hyp_params['a4']
         self.precision = hyp_params['precision']
-        self.pretrain = hyp_params['pretrain']
 
         # Loss components
         self.loss_recon = tf.constant(0.0, dtype=self.precision)
@@ -28,37 +27,29 @@ class LossDLDMD(keras.losses.Loss):
 
     def call(self, model, obs):
         """
-            model = [y, x_ae, x_adv, y_adv_real, y_adv_imag, weights, Lam, Phi, b]
+            model = [y, x_ae, x_adv, y_adv_real, weights, evals, evecs, phi]
         """
-        if self.pretrain:
-            # Autoencoder reconstruction
-            x_ae = tf.identity(model[1])
-            self.loss_recon = tf.reduce_mean(MSE(obs, x_ae))
-            self.total_loss = self.a1 * self.loss_recon
-        else:
-            y = tf.identity(model[0])
-            x_ae = tf.identity(model[1])
-            x_adv = tf.identity(model[2])
-            y_adv = tf.identity(model[3])
-            weights = model[5]
-            pred_horizon = -1
+        y = tf.identity(model[0])
+        x_ae = tf.identity(model[1])
+        x_adv = tf.identity(model[2])
+        weights = model[4]
+        pred_horizon = -1
 
-            # Autoencoder reconstruction
-            self.loss_recon = tf.reduce_mean(MSE(obs, x_ae))
+        # Autoencoder reconstruction
+        self.loss_recon = tf.reduce_mean(MSE(obs, x_ae))
 
-            # DMD reconstruction in the latent space
-            self.loss_dmd = self.dmdloss(y)
-            # self.loss_dmd = tf.reduce_mean(MSE(y_adv[:, :pred_horizon, :], y[:, :pred_horizon, :]))
+        # DMD reconstruction in the latent space
+        self.loss_dmd = self.dmdloss(y)
 
-            # Future state prediction
-            self.loss_pred = tf.reduce_mean(MSE(obs[:, :pred_horizon, :], x_adv[:, :pred_horizon, :]))
+        # Future state prediction
+        self.loss_pred = tf.reduce_mean(MSE(obs[:, :pred_horizon, :], x_adv[:, :pred_horizon, :]))
 
-            # Regularization on weights
-            self.loss_reg = tf.add_n([tf.nn.l2_loss(w) for w in weights])
+        # Regularization on weights
+        self.loss_reg = tf.add_n([tf.nn.l2_loss(w) for w in weights])
 
-            # Total loss
-            self.total_loss = self.a1 * self.loss_recon + self.a2 * self.loss_dmd + \
-                              self.a3 * self.loss_pred + self.a4 * self.loss_reg
+        # Total loss
+        self.total_loss = self.a1 * self.loss_recon + self.a2 * self.loss_dmd + \
+                          self.a3 * self.loss_pred + self.a4 * self.loss_reg
 
         return self.total_loss
 

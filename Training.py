@@ -1,6 +1,6 @@
 """
-    Created by:
-        Jay Lago - 23 Dec 2020
+    Author:
+        Jay Lago, NIWC/SDSU, 2021
 """
 import os
 import pickle
@@ -36,21 +36,6 @@ def train_model(hyp_params, train_data, val_set, model, loss):
             myoptimizer = tf.keras.optimizers.Adam(hyp_params['lr'])
         if hyp_params['optimizer'] == 'sgd':
             myoptimizer = tf.keras.optimizers.SGD(learning_rate=hyp_params['lr'], momentum=0.9)
-
-        # Pretraining the autoencoder
-        if hyp_params['pretrain'] and epoch < hyp_params['num_pretrain']:
-            print("pretraining...")
-            loss.a1 = tf.constant(1.0, dtype=hyp_params['precision'])   # Reconstruction
-            loss.a2 = tf.constant(0.0, dtype=hyp_params['precision'])   # DMD loss
-            loss.a3 = tf.constant(0.0, dtype=hyp_params['precision'])   # Prediction loss
-            loss.a4 = tf.constant(1e-6, dtype=hyp_params['precision'])  # Regularization
-        else:
-            model.pretrain = False
-            loss.pretrain = False
-            loss.a1 = hyp_params['a1']  # Reconstruction
-            loss.a2 = hyp_params['a2']  # DMD loss
-            loss.a3 = hyp_params['a3']  # Prediction loss
-            loss.a5 = hyp_params['a4']  # Regularization
 
         # Begin batch training
         with tf.device(hyp_params['device']):
@@ -95,7 +80,7 @@ def train_model(hyp_params, train_data, val_set, model, loss):
             this_plot = hyp_params['plot_path'] + '/' + epoch_start_time.strftime("%Y%m%d%H%M%S") + '.png'
             hf.diagnostic_plot(val_pred, val_batch, hyp_params, epoch,
                                this_plot, train_params['val_loss_comps_avgs'],
-                               train_params['val_loss_results'], model.pretrain)
+                               train_params['val_loss_results'])
 
         # Save model
         if epoch % hyp_params['save_every'] == 0 or epoch == hyp_params['max_epochs']:
