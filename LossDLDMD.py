@@ -1,6 +1,6 @@
 """
-    Created by:
-        Jay Lago
+    Author:
+        Jay Lago, SDSU, 2021
 """
 import tensorflow as tf
 from tensorflow import keras

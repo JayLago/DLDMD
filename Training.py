@@ -19,6 +19,7 @@ def train_model(hyp_params, train_data, val_set, model, loss):
     train_params['val_loss_results'] = []
     train_params['val_loss_comps_avgs'] = []
 
+    # Begin primary training loop
     for epoch in range(1, hyp_params['max_epochs'] + 1):
         epoch_start_time = dt.datetime.now()
         epoch_time = time.time()

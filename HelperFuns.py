@@ -1,9 +1,6 @@
 """
-    Created by:
-        Jay Lago
-
-    Modified:
-        17 Nov 2020 - Jay Lago
+    Author:
+        Jay Lago, SDSU, 2021
 """
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D

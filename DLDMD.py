@@ -73,7 +73,7 @@ class DLDMD(keras.Model):
                                trainable=True, name='dec_out'))
 
     def call(self, x):
-        # Encoder on the entire time series
+        # Encode the entire time series
         y = self.encoder(x)
         x_ae = self.decoder(y)
 

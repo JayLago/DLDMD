@@ -3,6 +3,8 @@
 *.png
 *.pkl
 *.h5
+*.zip
+*.txt
 .DS_Store
 
 
